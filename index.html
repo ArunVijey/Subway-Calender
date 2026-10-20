@@ -28,7 +28,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .head,.ph{display:flex;justify-content:space-between;align-items:flex-start;padding:18px 0 16px;flex-shrink:0}
 .date-btn{position:relative;display:block;cursor:pointer}
 .date-btn h1,.ph h1{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.08}
-.chev{width:16px;height:16px;margin-left:6px;vertical-align:middle;opacity:.8}
+.chev{display:inline-block;width:18px;height:18px;margin-left:6px;vertical-align:middle;opacity:.8} .chev svg{width:100%;height:100%;display:block}
 .date-btn input{position:absolute;inset:0;opacity:0;cursor:pointer;color-scheme:dark}
 .ph small{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;color:#a1a1aa;margin-top:6px}
 .circle{width:38px;height:38px;border-radius:50%;border:1.5px solid #3a3a40;background:#141416;display:grid;place-items:center;cursor:pointer;color:#fff;flex-shrink:0;font-size:15px}
@@ -48,7 +48,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .cols{display:flex;justify-content:space-between;font-size:11px;font-weight:800;letter-spacing:.08em;color:#a1a1aa;padding:0 2px 8px;flex-shrink:0}
 
 .board,.form{flex:1;min-height:0;overflow-y:auto;background:var(--card);color:var(--ink);border-radius:16px 16px 0 0}
-.board{touch-action:pan-y}
+.chev{display:inline-bl.board{touch-action:pan-y;margin:0 -18px;border-radius:0}ock;width:18px;height:18px;margin-left:6px;vertical-align:middle;opacity:.8} .chev svg{width:100%;height:100%;display:block}
 .row{display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid #e4e4e7;position:relative;cursor:pointer;animation:flap .4s cubic-bezier(.22,1,.36,1) backwards}
 .board.still .row{animation:none}
 @keyframes flap{from{transform:perspective(600px) rotateX(-80deg);opacity:0}to{transform:none;opacity:1}}
@@ -60,7 +60,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .row .tm{text-align:right;flex-shrink:0;min-width:56px}
 .row .n{font-size:28px;font-weight:600;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
 .row .u{font-size:9px;font-weight:800;letter-spacing:.08em;color:var(--sub);margin-top:4px}
-.row.live{background:var(--yellow);animation:none}
+.chev{display:inline-b.row.live,.board.still .row.live{background:var(--yellow);animation:glow 3s ease-in-out infinite} @keyframes glow{0%,100%{background-color:#ffd60a}50%{background-color:#fff1a8}} .row.live .tag{animation:livePulse 1.6s infinite} @keyframes livePulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(0,0,0,.6)}50%{transform:scale(1.06);box-shadow:0 0 0 5px rgba(0,0,0,0)}} .row.next{background:#f3e9d2} .row.next:active{background:#eadfc4}l.board{touch-action:pan-y;margin:0 -18px;border-radius:0}ock;width:18px;height:18px;margin-left:6px;vertical-align:middle;opacity:.8} .chev svg{width:100%;height:100%;display:block}
 .row.live .badge{background:transparent!important;color:#000!important;box-shadow:inset 0 0 0 2px #000}
 .row.live .s,.row.live .w,.row.live .u{color:#3f3f46}
 .tag{display:inline-block;background:#000;color:#fff;font-size:9px;font-weight:900;letter-spacing:.08em;padding:2px 5px;border-radius:3px;margin-bottom:4px}
