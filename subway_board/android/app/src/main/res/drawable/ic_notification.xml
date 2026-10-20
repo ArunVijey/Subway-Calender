@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status bar icon: calendar page with a little subway map, single color as Android requires. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <!-- page with a solid header band -->
+    <path android:fillColor="#FFFFFFFF" android:fillType="evenOdd"
+        android:pathData="M5,4H19A3,3 0,0 1,22 7V19A3,3 0,0 1,19 22H5A3,3 0,0 1,2 19V7A3,3 0,0 1,5 4ZM4,9.5V19A1,1 0,0 0,5 20H19A1,1 0,0 0,20 19V9.5Z"/>
+    <!-- binder rings -->
+    <path android:fillColor="#FFFFFFFF" android:pathData="M7,2.5h2v4h-2zM15,2.5h2v4h-2z"/>
+    <!-- map: two stations joined through a hub -->
+    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M7.5,12.5V15H16.5V17.5"/>
+    <path android:fillColor="#FFFFFFFF"
+        android:pathData="M7.5,12.5m-1.6,0a1.6,1.6 0,1 1,3.2 0a1.6,1.6 0,1 1,-3.2 0M16.5,17.5m-1.6,0a1.6,1.6 0,1 1,3.2 0a1.6,1.6 0,1 1,-3.2 0M12,15m-2.2,0a2.2,2.2 0,1 1,4.4 0a2.2,2.2 0,1 1,-4.4 0"/>
+</vector>

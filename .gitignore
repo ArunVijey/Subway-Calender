@@ -1,0 +1,9 @@
+# Google OAuth client files contain a client secret — never commit them.
+client_secret*.json
+google-services.json
+GoogleService-Info.plist
+
+# Signing keys
+*.jks
+*.keystore
+key.properties

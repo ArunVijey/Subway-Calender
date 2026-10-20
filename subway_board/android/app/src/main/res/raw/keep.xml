@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Looked up by name at runtime (notification sounds and icon), so keep them in release builds. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:keep="@raw/chime_boarding,@raw/chime_departing,@drawable/ic_notification" />

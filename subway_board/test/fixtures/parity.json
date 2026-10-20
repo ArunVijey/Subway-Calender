@@ -1,0 +1,3001 @@
+{
+ "now": 1792477800000,
+ "tzOffsetMin": 330,
+ "tzName": "Asia/Calcutta",
+ "fromG": [
+  {
+   "ge": {
+    "id": "abc123",
+    "status": "confirmed",
+    "summary": "Design review",
+    "location": "Room 2",
+    "description": "Agenda<br>1. Mocks<br/>2. <b>Copy</b>",
+    "start": {
+     "dateTime": "2026-10-20T15:00:00+05:30"
+    },
+    "end": {
+     "dateTime": "2026-10-20T16:00:00+05:30"
+    },
+    "hangoutLink": "https://meet.google.com/abc-defg-hij"
+   },
+   "result": {
+    "key": "g:me@example.com|abc123",
+    "gid": "abc123",
+    "calId": "me@example.com",
+    "title": "Design review",
+    "loc": "Room 2",
+    "notes": "Agenda\n1. Mocks\n2. Copy",
+    "link": "https://meet.google.com/abc-defg-hij",
+    "start": 1792488600000,
+    "end": 1792492200000,
+    "allDay": false
+   }
+  },
+  {
+   "ge": {
+    "id": "ny1",
+    "summary": "NY call",
+    "start": {
+     "dateTime": "2026-11-02T09:00:00-05:00",
+     "timeZone": "America/New_York"
+    },
+    "end": {
+     "dateTime": "2026-11-02T09:30:00-05:00"
+    },
+    "conferenceData": {
+     "entryPoints": [
+      {
+       "entryPointType": "phone",
+       "uri": "tel:+1"
+      },
+      {
+       "entryPointType": "video",
+       "uri": "https://zoom.us/j/42"
+      }
+     ]
+    }
+   },
+   "result": {
+    "key": "g:me@example.com|ny1",
+    "gid": "ny1",
+    "calId": "me@example.com",
+    "title": "NY call",
+    "loc": "",
+    "notes": "",
+    "link": "https://zoom.us/j/42",
+    "start": 1793628000000,
+    "end": 1793629800000,
+    "allDay": false
+   }
+  },
+  {
+   "ge": {
+    "id": "ad1",
+    "summary": "Offsite",
+    "start": {
+     "date": "2026-10-22"
+    },
+    "end": {
+     "date": "2026-10-24"
+    }
+   },
+   "result": {
+    "key": "g:me@example.com|ad1",
+    "gid": "ad1",
+    "calId": "me@example.com",
+    "title": "Offsite",
+    "loc": "",
+    "notes": "",
+    "link": "",
+    "start": 1792607400000,
+    "end": 1792780200000,
+    "allDay": true
+   }
+  },
+  {
+   "ge": {
+    "id": "ad2",
+    "start": {
+     "date": "2026-10-25"
+    }
+   },
+   "result": {
+    "key": "g:me@example.com|ad2",
+    "gid": "ad2",
+    "calId": "me@example.com",
+    "title": "(No title)",
+    "loc": "",
+    "notes": "",
+    "link": "",
+    "start": 1792866600000,
+    "end": 1792953000000,
+    "allDay": true
+   }
+  },
+  {
+   "ge": {
+    "id": "zero",
+    "summary": "Zero length",
+    "start": {
+     "dateTime": "2026-10-21T10:00:00Z"
+    },
+    "end": {
+     "dateTime": "2026-10-21T10:00:00Z"
+    }
+   },
+   "result": {
+    "key": "g:me@example.com|zero",
+    "gid": "zero",
+    "calId": "me@example.com",
+    "title": "Zero length",
+    "loc": "",
+    "notes": "",
+    "link": "",
+    "start": 1792576800000,
+    "end": 1792580400000,
+    "allDay": false
+   }
+  },
+  {
+   "ge": {
+    "id": "gone",
+    "status": "cancelled",
+    "summary": "Cancelled"
+   },
+   "result": null
+  },
+  {
+   "ge": {
+    "id": "rec_20261021T043000Z",
+    "summary": "Instance",
+    "start": {
+     "dateTime": "2026-10-21T10:00:00+05:30"
+    },
+    "end": {
+     "dateTime": "2026-10-21T10:15:00+05:30"
+    }
+   },
+   "result": {
+    "key": "g:me@example.com|rec_20261021T043000Z",
+    "gid": "rec_20261021T043000Z",
+    "calId": "me@example.com",
+    "title": "Instance",
+    "loc": "",
+    "notes": "",
+    "link": "",
+    "start": 1792557000000,
+    "end": 1792557900000,
+    "allDay": false
+   }
+  }
+ ],
+ "toG": [
+  {
+   "ev": {
+    "id": "n1",
+    "title": "New timed",
+    "loc": "Cafe",
+    "notes": "Bring laptop",
+    "cat": "A",
+    "start": 1792488600000,
+    "end": 1792491300000
+   },
+   "result": {
+    "summary": "New timed",
+    "location": "Cafe",
+    "start": {
+     "dateTime": "2026-10-20T09:30:00.000Z",
+     "timeZone": "Asia/Calcutta"
+    },
+    "end": {
+     "dateTime": "2026-10-20T10:15:00.000Z",
+     "timeZone": "Asia/Calcutta"
+    },
+    "description": "Bring laptop"
+   }
+  },
+  {
+   "ev": {
+    "id": "n2",
+    "title": "New all-day",
+    "loc": "",
+    "notes": "",
+    "cat": "B",
+    "allDay": true,
+    "start": 1792607400000,
+    "end": 1792780200000
+   },
+   "result": {
+    "summary": "New all-day",
+    "location": "",
+    "start": {
+     "date": "2026-10-22"
+    },
+    "end": {
+     "date": "2026-10-24"
+    },
+    "description": ""
+   }
+  },
+  {
+   "ev": {
+    "id": "n3",
+    "title": "Weekly sync",
+    "loc": "",
+    "notes": "",
+    "cat": "A",
+    "start": 1792467000000,
+    "end": 1792468800000,
+    "repeat": {
+     "freq": "weekly",
+     "until": "2026-12-31"
+    }
+   },
+   "result": {
+    "summary": "Weekly sync",
+    "location": "",
+    "start": {
+     "dateTime": "2026-10-20T03:30:00.000Z",
+     "timeZone": "Asia/Calcutta"
+    },
+    "end": {
+     "dateTime": "2026-10-20T04:00:00.000Z",
+     "timeZone": "Asia/Calcutta"
+    },
+    "description": "",
+    "recurrence": [
+     "RRULE:FREQ=WEEKLY;UNTIL=20261231T182959Z"
+    ]
+   }
+  },
+  {
+   "ev": {
+    "id": "n4",
+    "title": "Weekday standup",
+    "loc": "",
+    "notes": "",
+    "cat": "A",
+    "start": 1792467000000,
+    "end": 1792467900000,
+    "repeat": {
+     "freq": "weekdays",
+     "until": ""
+    }
+   },
+   "result": {
+    "summary": "Weekday standup",
+    "location": "",
+    "start": {
+     "dateTime": "2026-10-20T03:30:00.000Z",
+     "timeZone": "Asia/Calcutta"
+    },
+    "end": {
+     "dateTime": "2026-10-20T03:45:00.000Z",
+     "timeZone": "Asia/Calcutta"
+    },
+    "description": "",
+    "recurrence": [
+     "RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR"
+    ]
+   }
+  },
+  {
+   "ev": {
+    "id": "e1",
+    "title": "Edited, notes untouched",
+    "loc": "Room 2",
+    "notes": "Agenda",
+    "cat": "A",
+    "gid": "abc123",
+    "start": 1792488600000,
+    "end": 1792492200000
+   },
+   "result": {
+    "summary": "Edited, notes untouched",
+    "location": "Room 2",
+    "start": {
+     "dateTime": "2026-10-20T09:30:00.000Z",
+     "timeZone": "Asia/Calcutta"
+    },
+    "end": {
+     "dateTime": "2026-10-20T10:30:00.000Z",
+     "timeZone": "Asia/Calcutta"
+    }
+   }
+  },
+  {
+   "ev": {
+    "id": "e2",
+    "title": "Edited notes",
+    "loc": "",
+    "notes": "New notes",
+    "cat": "A",
+    "gid": "abc124",
+    "dirtyNotes": true,
+    "start": 1792488600000,
+    "end": 1792492200000
+   },
+   "result": {
+    "summary": "Edited notes",
+    "location": "",
+    "start": {
+     "dateTime": "2026-10-20T09:30:00.000Z",
+     "timeZone": "Asia/Calcutta"
+    },
+    "end": {
+     "dateTime": "2026-10-20T10:30:00.000Z",
+     "timeZone": "Asia/Calcutta"
+    },
+    "description": "New notes"
+   }
+  }
+ ],
+ "ics": [
+  {
+   "name": "basic",
+   "text": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Test//EN\r\nBEGIN:VEVENT\r\nUID:basic-1\r\nDTSTART:20261020T150000Z\r\nDTEND:20261020T160000Z\r\nSUMMARY:Team standup\\, daily\r\nLOCATION:Room 4\\; floor 2\r\nDESCRIPTION:Line one\\nLine two https://meet.google.com/abc-defg-hij\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:floating-1\r\nDTSTART:20261021T093000\r\nDURATION:PT45M\r\nSUMMARY:Floating local time\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:allday-1\r\nDTSTART;VALUE=DATE:20261022\r\nDTEND;VALUE=DATE:20261025\r\nSUMMARY:Conference\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:allday-2\r\nDTSTART;VALUE=DATE:20261101\r\nSUMMARY:One day no end\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:cancel-1\r\nDTSTART:20261020T150000Z\r\nSTATUS:CANCELLED\r\nSUMMARY:Cancelled thing\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nDTSTART:20261023T100000Z\r\nSUMMARY:No uid\r\nBEGIN:VALARM\r\nTRIGGER:-PT10M\r\nACTION:DISPLAY\r\nDESCRIPTION:Reminder\r\nEND:VALARM\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:old-1\r\nDTSTART:20250101T100000Z\r\nSUMMARY:Outside the window\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:fold-1\r\nDTSTART:20261024T080000Z\r\nDTEND:20261024T083000Z\r\nSUMMARY:A very long title that is folded across\r\n  two lines in the file\r\nATTENDEE;CN=\"Doe: John\";ROLE=REQ-PARTICIPANT:mailto:john@example.com\r\nURL:https://zoom.us/j/123456\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+   "items": [
+    {
+     "key": "basic-1",
+     "title": "Team standup, daily",
+     "loc": "Room 4; floor 2",
+     "notes": "Line one\nLine two https://meet.google.com/abc-defg-hij",
+     "link": "",
+     "start": 1792508400000,
+     "end": 1792512000000,
+     "allDay": false
+    },
+    {
+     "key": "floating-1",
+     "title": "Floating local time",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1792555200000,
+     "end": 1792557900000,
+     "allDay": false
+    },
+    {
+     "key": "allday-1",
+     "title": "Conference",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1792607400000,
+     "end": 1792866600000,
+     "allDay": true
+    },
+    {
+     "key": "allday-2",
+     "title": "One day no end",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1793471400000,
+     "end": 1793557800000,
+     "allDay": true
+    },
+    {
+     "key": "No uid|20261023T100000Z",
+     "title": "No uid",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1792749600000,
+     "end": 1792753200000,
+     "allDay": false
+    },
+    {
+     "key": "fold-1",
+     "title": "A very long title that is folded across two lines in the file",
+     "loc": "",
+     "notes": "",
+     "link": "https://zoom.us/j/123456",
+     "start": 1792828800000,
+     "end": 1792830600000,
+     "allDay": false
+    }
+   ]
+  },
+  {
+   "name": "tz",
+   "text": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Test//EN\r\nBEGIN:VEVENT\r\nUID:ny-weekly\r\nDTSTART;TZID=America/New_York:20260302T090000\r\nDTEND;TZID=America/New_York:20260302T100000\r\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20261231T235959Z\r\nEXDATE;TZID=America/New_York:20261021T090000\r\nSUMMARY:NY weekly across DST\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:ny-weekly\r\nRECURRENCE-ID;TZID=America/New_York:20261026T090000\r\nDTSTART;TZID=America/New_York:20261026T130000\r\nDTEND;TZID=America/New_York:20261026T140000\r\nSUMMARY:NY weekly (moved)\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:berlin-1\r\nDTSTART;TZID=Europe/Berlin:20261025T020000\r\nDTEND;TZID=Europe/Berlin:20261025T040000\r\nSUMMARY:Berlin over the DST change\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:win-tz\r\nDTSTART;TZID=Eastern Standard Time:20261027T110000\r\nDTEND;TZID=Eastern Standard Time:20261027T120000\r\nSUMMARY:Windows zone name\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:tokyo-daily\r\nDTSTART;TZID=Asia/Tokyo:20261018T070000\r\nDURATION:PT30M\r\nRRULE:FREQ=DAILY;INTERVAL=2;COUNT=6\r\nSUMMARY:Tokyo every other day\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+   "items": [
+    {
+     "key": "ny-weekly#29833260",
+     "title": "NY weekly across DST",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1789995600000,
+     "end": 1789999200000,
+     "allDay": false
+    },
+    {
+     "key": "ny-weekly#29836140",
+     "title": "NY weekly across DST",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1790168400000,
+     "end": 1790172000000,
+     "allDay": false
+    },
+    {
+     "key": "ny-weekly#29843340",
+     "title": "NY weekly across DST",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1790600400000,
+     "end": 1790604000000,
+     "allDay": false
+    },
+    {
+     "key": "ny-weekly#29846220",
+     "title": "NY weekly across DST",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1790773200000,
+     "end": 1790776800000,
+     "allDay": false
+    },
+    {
+     "key": "ny-weekly#29853420",
+     "title": "NY weekly across DST",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1791205200000,
+     "end": 1791208800000,
+     "allDay": false
+    },
+    {
+     "key": "ny-weekly#29856300",
+     "title": "NY weekly across DST",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1791378000000,
+     "end": 1791381600000,
+     "allDay": false
+    },
+    {
+     "key": "ny-weekly#29863500",
+     "title": "NY weekly across DST",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1791810000000,
+     "end": 1791813600000,
+     "allDay": false
+    },
+    {
+     "key": "ny-weekly#29866380",
+     "title": "NY weekly across DST",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1791982800000,
+     "end": 1791986400000,
+     "allDay": false
+    },
+    {
+     "key": "ny-weekly#29873580",
+     "title": "NY weekly across DST",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1792414800000,
+     "end": 1792418400000,
+     "allDay": false
+    },
+    {
+     "key": "ny-weekly#29886540",
+     "title": "NY weekly across DST",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1793192400000,
+     "end": 1793196000000,
+     "allDay": false
+    },
+    {
+     "key": "ny-weekly#29893800",
+     "title": "NY weekly across DST",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1793628000000,
+     "end": 1793631600000,
+     "allDay": false
+    },
+    {
+     "key": "ny-weekly#29896680",
+     "title": "NY weekly across DST",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1793800800000,
+     "end": 1793804400000,
+     "allDay": false
+    },
+    {
+     "key": "ny-weekly#29903880",
+     "title": "NY weekly across DST",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1794232800000,
+     "end": 1794236400000,
+     "allDay": false
+    },
+    {
+     "key": "ny-weekly#29906760",
+     "title": "NY weekly across DST",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1794405600000,
+     "end": 1794409200000,
+     "allDay": false
+    },
+    {
+     "key": "ny-weekly#29913960",
+     "title": "NY weekly across DST",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1794837600000,
+     "end": 1794841200000,
+     "allDay": false
+    },
+    {
+     "key": "ny-weekly#29916840",
+     "title": "NY weekly across DST",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1795010400000,
+     "end": 1795014000000,
+     "allDay": false
+    },
+    {
+     "key": "ny-weekly#29924040",
+     "title": "NY weekly across DST",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1795442400000,
+     "end": 1795446000000,
+     "allDay": false
+    },
+    {
+     "key": "ny-weekly#29926920",
+     "title": "NY weekly across DST",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1795615200000,
+     "end": 1795618800000,
+     "allDay": false
+    },
+    {
+     "key": "ny-weekly#29934120",
+     "title": "NY weekly across DST",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1796047200000,
+     "end": 1796050800000,
+     "allDay": false
+    },
+    {
+     "key": "ny-weekly#29937000",
+     "title": "NY weekly across DST",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1796220000000,
+     "end": 1796223600000,
+     "allDay": false
+    },
+    {
+     "key": "ny-weekly#29944200",
+     "title": "NY weekly across DST",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1796652000000,
+     "end": 1796655600000,
+     "allDay": false
+    },
+    {
+     "key": "ny-weekly#29947080",
+     "title": "NY weekly across DST",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1796824800000,
+     "end": 1796828400000,
+     "allDay": false
+    },
+    {
+     "key": "ny-weekly#29954280",
+     "title": "NY weekly across DST",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1797256800000,
+     "end": 1797260400000,
+     "allDay": false
+    },
+    {
+     "key": "ny-weekly#29957160",
+     "title": "NY weekly across DST",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1797429600000,
+     "end": 1797433200000,
+     "allDay": false
+    },
+    {
+     "key": "ny-weekly#29964360",
+     "title": "NY weekly across DST",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1797861600000,
+     "end": 1797865200000,
+     "allDay": false
+    },
+    {
+     "key": "ny-weekly#29967240",
+     "title": "NY weekly across DST",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1798034400000,
+     "end": 1798038000000,
+     "allDay": false
+    },
+    {
+     "key": "ny-weekly#29974440",
+     "title": "NY weekly across DST",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1798466400000,
+     "end": 1798470000000,
+     "allDay": false
+    },
+    {
+     "key": "ny-weekly#29977320",
+     "title": "NY weekly across DST",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1798639200000,
+     "end": 1798642800000,
+     "allDay": false
+    },
+    {
+     "key": "ny-weekly#29883660",
+     "title": "NY weekly (moved)",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1793034000000,
+     "end": 1793037600000,
+     "allDay": false
+    },
+    {
+     "key": "berlin-1",
+     "title": "Berlin over the DST change",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1792890000000,
+     "end": 1792897200000,
+     "allDay": false
+    },
+    {
+     "key": "win-tz",
+     "title": "Windows zone name",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1793079000000,
+     "end": 1793082600000,
+     "allDay": false
+    },
+    {
+     "key": "tokyo-daily#29871240",
+     "title": "Tokyo every other day",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1792274400000,
+     "end": 1792276200000,
+     "allDay": false
+    },
+    {
+     "key": "tokyo-daily#29874120",
+     "title": "Tokyo every other day",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1792447200000,
+     "end": 1792449000000,
+     "allDay": false
+    },
+    {
+     "key": "tokyo-daily#29877000",
+     "title": "Tokyo every other day",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1792620000000,
+     "end": 1792621800000,
+     "allDay": false
+    },
+    {
+     "key": "tokyo-daily#29879880",
+     "title": "Tokyo every other day",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1792792800000,
+     "end": 1792794600000,
+     "allDay": false
+    },
+    {
+     "key": "tokyo-daily#29882760",
+     "title": "Tokyo every other day",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1792965600000,
+     "end": 1792967400000,
+     "allDay": false
+    },
+    {
+     "key": "tokyo-daily#29885640",
+     "title": "Tokyo every other day",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1793138400000,
+     "end": 1793140200000,
+     "allDay": false
+    }
+   ]
+  },
+  {
+   "name": "rules",
+   "text": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Test//EN\r\nBEGIN:VEVENT\r\nUID:last-fri\r\nDTSTART:20260130T170000Z\r\nDTEND:20260130T180000Z\r\nRRULE:FREQ=MONTHLY;BYDAY=-1FR\r\nSUMMARY:Last Friday\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:second-tue\r\nDTSTART:20260113T120000Z\r\nDTEND:20260113T123000Z\r\nRRULE:FREQ=MONTHLY;BYDAY=2TU;COUNT=14\r\nSUMMARY:Second Tuesday\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:month-end\r\nDTSTART;VALUE=DATE:20260131\r\nDTEND;VALUE=DATE:20260201\r\nRRULE:FREQ=MONTHLY;BYMONTHDAY=-1\r\nSUMMARY:Month end\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:the-31st\r\nDTSTART:20260131T090000Z\r\nDTEND:20260131T100000Z\r\nRRULE:FREQ=MONTHLY\r\nSUMMARY:Only months with 31 days\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:leap\r\nDTSTART;VALUE=DATE:20240229\r\nRRULE:FREQ=YEARLY\r\nSUMMARY:Leap day\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:yearly-bymonth\r\nDTSTART:20250310T080000Z\r\nDTEND:20250310T090000Z\r\nRRULE:FREQ=YEARLY;BYMONTH=3,11;BYDAY=1MO\r\nSUMMARY:First Monday of March and November\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:daily-until-date\r\nDTSTART;VALUE=DATE:20261015\r\nRRULE:FREQ=DAILY;UNTIL=20261025\r\nEXDATE;VALUE=DATE:20261020,20261021\r\nSUMMARY:Daily until a date\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:weekday-daily\r\nDTSTART:20261019T060000Z\r\nDTEND:20261019T063000Z\r\nRRULE:FREQ=DAILY;BYDAY=MO,TU,WE,TH,FR;COUNT=20\r\nSUMMARY:Weekdays via DAILY\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:biweekly\r\nDTSTART:20261007T140000Z\r\nDTEND:20261007T150000Z\r\nRRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=WE,FR\r\nSUMMARY:Every other week\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+   "items": [
+    {
+     "key": "last-fri#29839260",
+     "title": "Last Friday",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1790355600000,
+     "end": 1790359200000,
+     "allDay": false
+    },
+    {
+     "key": "last-fri#29889660",
+     "title": "Last Friday",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1793379600000,
+     "end": 1793383200000,
+     "allDay": false
+    },
+    {
+     "key": "last-fri#29929980",
+     "title": "Last Friday",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1795798800000,
+     "end": 1795802400000,
+     "allDay": false
+    },
+    {
+     "key": "last-fri#29970300",
+     "title": "Last Friday",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1798218000000,
+     "end": 1798221600000,
+     "allDay": false
+    },
+    {
+     "key": "last-fri#30020700",
+     "title": "Last Friday",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1801242000000,
+     "end": 1801245600000,
+     "allDay": false
+    },
+    {
+     "key": "last-fri#30061020",
+     "title": "Last Friday",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1803661200000,
+     "end": 1803664800000,
+     "allDay": false
+    },
+    {
+     "key": "last-fri#30101340",
+     "title": "Last Friday",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1806080400000,
+     "end": 1806084000000,
+     "allDay": false
+    },
+    {
+     "key": "last-fri#30151740",
+     "title": "Last Friday",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1809104400000,
+     "end": 1809108000000,
+     "allDay": false
+    },
+    {
+     "key": "last-fri#30192060",
+     "title": "Last Friday",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1811523600000,
+     "end": 1811527200000,
+     "allDay": false
+    },
+    {
+     "key": "last-fri#30232380",
+     "title": "Last Friday",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1813942800000,
+     "end": 1813946400000,
+     "allDay": false
+    },
+    {
+     "key": "last-fri#30282780",
+     "title": "Last Friday",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1816966800000,
+     "end": 1816970400000,
+     "allDay": false
+    },
+    {
+     "key": "last-fri#30323100",
+     "title": "Last Friday",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1819386000000,
+     "end": 1819389600000,
+     "allDay": false
+    },
+    {
+     "key": "last-fri#30363420",
+     "title": "Last Friday",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1821805200000,
+     "end": 1821808800000,
+     "allDay": false
+    },
+    {
+     "key": "second-tue#29864880",
+     "title": "Second Tuesday",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1791892800000,
+     "end": 1791894600000,
+     "allDay": false
+    },
+    {
+     "key": "second-tue#29905200",
+     "title": "Second Tuesday",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1794312000000,
+     "end": 1794313800000,
+     "allDay": false
+    },
+    {
+     "key": "second-tue#29945520",
+     "title": "Second Tuesday",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1796731200000,
+     "end": 1796733000000,
+     "allDay": false
+    },
+    {
+     "key": "second-tue#29995920",
+     "title": "Second Tuesday",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1799755200000,
+     "end": 1799757000000,
+     "allDay": false
+    },
+    {
+     "key": "second-tue#30036240",
+     "title": "Second Tuesday",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1802174400000,
+     "end": 1802176200000,
+     "allDay": false
+    },
+    {
+     "key": "month-end#29845110",
+     "title": "Month end",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1790706600000,
+     "end": 1790793000000,
+     "allDay": true
+    },
+    {
+     "key": "month-end#29889750",
+     "title": "Month end",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1793385000000,
+     "end": 1793471400000,
+     "allDay": true
+    },
+    {
+     "key": "month-end#29932950",
+     "title": "Month end",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1795977000000,
+     "end": 1796063400000,
+     "allDay": true
+    },
+    {
+     "key": "month-end#29977590",
+     "title": "Month end",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1798655400000,
+     "end": 1798741800000,
+     "allDay": true
+    },
+    {
+     "key": "month-end#30022230",
+     "title": "Month end",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1801333800000,
+     "end": 1801420200000,
+     "allDay": true
+    },
+    {
+     "key": "month-end#30062550",
+     "title": "Month end",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1803753000000,
+     "end": 1803839400000,
+     "allDay": true
+    },
+    {
+     "key": "month-end#30107190",
+     "title": "Month end",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1806431400000,
+     "end": 1806517800000,
+     "allDay": true
+    },
+    {
+     "key": "month-end#30150390",
+     "title": "Month end",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1809023400000,
+     "end": 1809109800000,
+     "allDay": true
+    },
+    {
+     "key": "month-end#30195030",
+     "title": "Month end",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1811701800000,
+     "end": 1811788200000,
+     "allDay": true
+    },
+    {
+     "key": "month-end#30238230",
+     "title": "Month end",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1814293800000,
+     "end": 1814380200000,
+     "allDay": true
+    },
+    {
+     "key": "month-end#30282870",
+     "title": "Month end",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1816972200000,
+     "end": 1817058600000,
+     "allDay": true
+    },
+    {
+     "key": "month-end#30327510",
+     "title": "Month end",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1819650600000,
+     "end": 1819737000000,
+     "allDay": true
+    },
+    {
+     "key": "month-end#30370710",
+     "title": "Month end",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1822242600000,
+     "end": 1822329000000,
+     "allDay": true
+    },
+    {
+     "key": "the-31st#29890620",
+     "title": "Only months with 31 days",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1793437200000,
+     "end": 1793440800000,
+     "allDay": false
+    },
+    {
+     "key": "the-31st#29978460",
+     "title": "Only months with 31 days",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1798707600000,
+     "end": 1798711200000,
+     "allDay": false
+    },
+    {
+     "key": "the-31st#30023100",
+     "title": "Only months with 31 days",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1801386000000,
+     "end": 1801389600000,
+     "allDay": false
+    },
+    {
+     "key": "the-31st#30108060",
+     "title": "Only months with 31 days",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1806483600000,
+     "end": 1806487200000,
+     "allDay": false
+    },
+    {
+     "key": "the-31st#30195900",
+     "title": "Only months with 31 days",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1811754000000,
+     "end": 1811757600000,
+     "allDay": false
+    },
+    {
+     "key": "the-31st#30283740",
+     "title": "Only months with 31 days",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1817024400000,
+     "end": 1817028000000,
+     "allDay": false
+    },
+    {
+     "key": "the-31st#30328380",
+     "title": "Only months with 31 days",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1819702800000,
+     "end": 1819706400000,
+     "allDay": false
+    },
+    {
+     "key": "yearly-bymonth#29893440",
+     "title": "First Monday of March and November",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1793606400000,
+     "end": 1793610000000,
+     "allDay": false
+    },
+    {
+     "key": "yearly-bymonth#30064800",
+     "title": "First Monday of March and November",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1803888000000,
+     "end": 1803891600000,
+     "allDay": false
+    },
+    {
+     "key": "daily-until-date#29866710",
+     "title": "Daily until a date",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1792002600000,
+     "end": 1792089000000,
+     "allDay": true
+    },
+    {
+     "key": "daily-until-date#29868150",
+     "title": "Daily until a date",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1792089000000,
+     "end": 1792175400000,
+     "allDay": true
+    },
+    {
+     "key": "daily-until-date#29869590",
+     "title": "Daily until a date",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1792175400000,
+     "end": 1792261800000,
+     "allDay": true
+    },
+    {
+     "key": "daily-until-date#29871030",
+     "title": "Daily until a date",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1792261800000,
+     "end": 1792348200000,
+     "allDay": true
+    },
+    {
+     "key": "daily-until-date#29872470",
+     "title": "Daily until a date",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1792348200000,
+     "end": 1792434600000,
+     "allDay": true
+    },
+    {
+     "key": "daily-until-date#29876790",
+     "title": "Daily until a date",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1792607400000,
+     "end": 1792693800000,
+     "allDay": true
+    },
+    {
+     "key": "daily-until-date#29878230",
+     "title": "Daily until a date",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1792693800000,
+     "end": 1792780200000,
+     "allDay": true
+    },
+    {
+     "key": "daily-until-date#29879670",
+     "title": "Daily until a date",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1792780200000,
+     "end": 1792866600000,
+     "allDay": true
+    },
+    {
+     "key": "daily-until-date#29881110",
+     "title": "Daily until a date",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1792866600000,
+     "end": 1792953000000,
+     "allDay": true
+    },
+    {
+     "key": "weekday-daily#29873160",
+     "title": "Weekdays via DAILY",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1792389600000,
+     "end": 1792391400000,
+     "allDay": false
+    },
+    {
+     "key": "weekday-daily#29874600",
+     "title": "Weekdays via DAILY",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1792476000000,
+     "end": 1792477800000,
+     "allDay": false
+    },
+    {
+     "key": "weekday-daily#29876040",
+     "title": "Weekdays via DAILY",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1792562400000,
+     "end": 1792564200000,
+     "allDay": false
+    },
+    {
+     "key": "weekday-daily#29877480",
+     "title": "Weekdays via DAILY",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1792648800000,
+     "end": 1792650600000,
+     "allDay": false
+    },
+    {
+     "key": "weekday-daily#29878920",
+     "title": "Weekdays via DAILY",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1792735200000,
+     "end": 1792737000000,
+     "allDay": false
+    },
+    {
+     "key": "weekday-daily#29883240",
+     "title": "Weekdays via DAILY",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1792994400000,
+     "end": 1792996200000,
+     "allDay": false
+    },
+    {
+     "key": "weekday-daily#29884680",
+     "title": "Weekdays via DAILY",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1793080800000,
+     "end": 1793082600000,
+     "allDay": false
+    },
+    {
+     "key": "weekday-daily#29886120",
+     "title": "Weekdays via DAILY",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1793167200000,
+     "end": 1793169000000,
+     "allDay": false
+    },
+    {
+     "key": "weekday-daily#29887560",
+     "title": "Weekdays via DAILY",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1793253600000,
+     "end": 1793255400000,
+     "allDay": false
+    },
+    {
+     "key": "weekday-daily#29889000",
+     "title": "Weekdays via DAILY",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1793340000000,
+     "end": 1793341800000,
+     "allDay": false
+    },
+    {
+     "key": "weekday-daily#29893320",
+     "title": "Weekdays via DAILY",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1793599200000,
+     "end": 1793601000000,
+     "allDay": false
+    },
+    {
+     "key": "weekday-daily#29894760",
+     "title": "Weekdays via DAILY",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1793685600000,
+     "end": 1793687400000,
+     "allDay": false
+    },
+    {
+     "key": "weekday-daily#29896200",
+     "title": "Weekdays via DAILY",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1793772000000,
+     "end": 1793773800000,
+     "allDay": false
+    },
+    {
+     "key": "weekday-daily#29897640",
+     "title": "Weekdays via DAILY",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1793858400000,
+     "end": 1793860200000,
+     "allDay": false
+    },
+    {
+     "key": "weekday-daily#29899080",
+     "title": "Weekdays via DAILY",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1793944800000,
+     "end": 1793946600000,
+     "allDay": false
+    },
+    {
+     "key": "weekday-daily#29903400",
+     "title": "Weekdays via DAILY",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1794204000000,
+     "end": 1794205800000,
+     "allDay": false
+    },
+    {
+     "key": "weekday-daily#29904840",
+     "title": "Weekdays via DAILY",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1794290400000,
+     "end": 1794292200000,
+     "allDay": false
+    },
+    {
+     "key": "weekday-daily#29906280",
+     "title": "Weekdays via DAILY",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1794376800000,
+     "end": 1794378600000,
+     "allDay": false
+    },
+    {
+     "key": "weekday-daily#29907720",
+     "title": "Weekdays via DAILY",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1794463200000,
+     "end": 1794465000000,
+     "allDay": false
+    },
+    {
+     "key": "weekday-daily#29909160",
+     "title": "Weekdays via DAILY",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1794549600000,
+     "end": 1794551400000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#29856360",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1791381600000,
+     "end": 1791385200000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#29859240",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1791554400000,
+     "end": 1791558000000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#29876520",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1792591200000,
+     "end": 1792594800000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#29879400",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1792764000000,
+     "end": 1792767600000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#29896680",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1793800800000,
+     "end": 1793804400000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#29899560",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1793973600000,
+     "end": 1793977200000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#29916840",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1795010400000,
+     "end": 1795014000000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#29919720",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1795183200000,
+     "end": 1795186800000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#29937000",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1796220000000,
+     "end": 1796223600000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#29939880",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1796392800000,
+     "end": 1796396400000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#29957160",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1797429600000,
+     "end": 1797433200000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#29960040",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1797602400000,
+     "end": 1797606000000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#29977320",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1798639200000,
+     "end": 1798642800000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#29980200",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1798812000000,
+     "end": 1798815600000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#29997480",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1799848800000,
+     "end": 1799852400000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30000360",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1800021600000,
+     "end": 1800025200000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30017640",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1801058400000,
+     "end": 1801062000000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30020520",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1801231200000,
+     "end": 1801234800000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30037800",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1802268000000,
+     "end": 1802271600000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30040680",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1802440800000,
+     "end": 1802444400000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30057960",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1803477600000,
+     "end": 1803481200000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30060840",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1803650400000,
+     "end": 1803654000000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30078120",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1804687200000,
+     "end": 1804690800000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30081000",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1804860000000,
+     "end": 1804863600000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30098280",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1805896800000,
+     "end": 1805900400000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30101160",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1806069600000,
+     "end": 1806073200000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30118440",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1807106400000,
+     "end": 1807110000000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30121320",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1807279200000,
+     "end": 1807282800000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30138600",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1808316000000,
+     "end": 1808319600000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30141480",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1808488800000,
+     "end": 1808492400000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30158760",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1809525600000,
+     "end": 1809529200000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30161640",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1809698400000,
+     "end": 1809702000000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30178920",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1810735200000,
+     "end": 1810738800000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30181800",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1810908000000,
+     "end": 1810911600000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30199080",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1811944800000,
+     "end": 1811948400000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30201960",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1812117600000,
+     "end": 1812121200000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30219240",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1813154400000,
+     "end": 1813158000000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30222120",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1813327200000,
+     "end": 1813330800000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30239400",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1814364000000,
+     "end": 1814367600000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30242280",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1814536800000,
+     "end": 1814540400000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30259560",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1815573600000,
+     "end": 1815577200000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30262440",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1815746400000,
+     "end": 1815750000000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30279720",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1816783200000,
+     "end": 1816786800000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30282600",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1816956000000,
+     "end": 1816959600000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30299880",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1817992800000,
+     "end": 1817996400000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30302760",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1818165600000,
+     "end": 1818169200000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30320040",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1819202400000,
+     "end": 1819206000000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30322920",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1819375200000,
+     "end": 1819378800000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30340200",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1820412000000,
+     "end": 1820415600000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30343080",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1820584800000,
+     "end": 1820588400000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30360360",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1821621600000,
+     "end": 1821625200000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30363240",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1821794400000,
+     "end": 1821798000000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30380520",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1822831200000,
+     "end": 1822834800000,
+     "allDay": false
+    },
+    {
+     "key": "biweekly#30383400",
+     "title": "Every other week",
+     "loc": "",
+     "notes": "",
+     "link": "",
+     "start": 1823004000000,
+     "end": 1823007600000,
+     "allDay": false
+    }
+   ]
+  }
+ ],
+ "occState": {
+  "lines": [
+   {
+    "id": "A",
+    "name": "Work",
+    "color": "#1d6cf2",
+    "kw": ""
+   },
+   {
+    "id": "B",
+    "name": "Focus",
+    "color": "#ff8a00",
+    "kw": ""
+   }
+  ],
+  "events": [
+   {
+    "id": "daily",
+    "title": "Daily",
+    "cat": "A",
+    "start": 1790825400000,
+    "end": 1790827200000,
+    "repeat": {
+     "freq": "daily",
+     "until": "2026-10-25"
+    },
+    "exdates": [
+     29875890
+    ]
+   },
+   {
+    "id": "wkdays",
+    "title": "Weekdays",
+    "cat": "B",
+    "start": 1790908200000,
+    "end": 1790909100000,
+    "repeat": {
+     "freq": "weekdays",
+     "until": ""
+    }
+   },
+   {
+    "id": "weekly",
+    "title": "Weekly",
+    "cat": "A",
+    "start": 1790685000000,
+    "end": 1790688600000,
+    "repeat": {
+     "freq": "weekly",
+     "until": ""
+    }
+   },
+   {
+    "id": "monthly31",
+    "title": "Monthly 31",
+    "cat": "A",
+    "start": 1788157800000,
+    "end": 1788161400000,
+    "repeat": {
+     "freq": "monthly",
+     "until": ""
+    }
+   },
+   {
+    "id": "yearly",
+    "title": "Birthday",
+    "cat": "B",
+    "allDay": true,
+    "start": 1603305000000,
+    "end": 1603391400000,
+    "repeat": {
+     "freq": "yearly",
+     "until": ""
+    }
+   },
+   {
+    "id": "alldayrep",
+    "title": "Two-day weekly",
+    "cat": "B",
+    "allDay": true,
+    "start": 1790965800000,
+    "end": 1791138600000,
+    "repeat": {
+     "freq": "weekly",
+     "until": "2026-11-30"
+    }
+   },
+   {
+    "id": "plain",
+    "title": "Plain",
+    "cat": "A",
+    "start": 1792485000000,
+    "end": 1792488600000
+   },
+   {
+    "id": "overnight",
+    "title": "Overnight",
+    "cat": "A",
+    "start": 1792427400000,
+    "end": 1792441800000
+   },
+   {
+    "id": "zero",
+    "title": "Zero length",
+    "cat": "A",
+    "start": 1792521000000,
+    "end": 1792521000000
+   },
+   {
+    "id": "multiday",
+    "title": "Multi-day",
+    "cat": "B",
+    "allDay": true,
+    "start": 1792348200000,
+    "end": 1792693800000
+   }
+  ]
+ },
+ "occ": [
+  {
+   "from": 1792434600000,
+   "to": 1792521000000,
+   "result": [
+    {
+     "id": "daily::29874450",
+     "start": 1792467000000,
+     "end": 1792468800000
+    },
+    {
+     "id": "wkdays::29874390",
+     "start": 1792463400000,
+     "end": 1792464300000
+    },
+    {
+     "id": "weekly::29874990",
+     "start": 1792499400000,
+     "end": 1792503000000
+    },
+    {
+     "id": "plain",
+     "start": 1792485000000,
+     "end": 1792488600000
+    },
+    {
+     "id": "overnight",
+     "start": 1792427400000,
+     "end": 1792441800000
+    },
+    {
+     "id": "multiday",
+     "start": 1792348200000,
+     "end": 1792693800000
+    }
+   ]
+  },
+  {
+   "from": 1792521000000,
+   "to": 1792607400000,
+   "result": [
+    {
+     "id": "wkdays::29875830",
+     "start": 1792549800000,
+     "end": 1792550700000
+    },
+    {
+     "id": "zero",
+     "start": 1792521000000,
+     "end": 1792521000000
+    },
+    {
+     "id": "multiday",
+     "start": 1792348200000,
+     "end": 1792693800000
+    }
+   ]
+  },
+  {
+   "from": 1792607400000,
+   "to": 1792693800000,
+   "result": [
+    {
+     "id": "daily::29877330",
+     "start": 1792639800000,
+     "end": 1792641600000
+    },
+    {
+     "id": "wkdays::29877270",
+     "start": 1792636200000,
+     "end": 1792637100000
+    },
+    {
+     "id": "yearly::29876790",
+     "start": 1792607400000,
+     "end": 1792693800000
+    },
+    {
+     "id": "multiday",
+     "start": 1792348200000,
+     "end": 1792693800000
+    }
+   ]
+  },
+  {
+   "from": 1793385000000,
+   "to": 1793471400000,
+   "result": [
+    {
+     "id": "monthly31::29890470",
+     "start": 1793428200000,
+     "end": 1793431800000
+    },
+    {
+     "id": "alldayrep::29889750",
+     "start": 1793385000000,
+     "end": 1793557800000
+    }
+   ]
+  },
+  {
+   "from": 1790793000000,
+   "to": 1798655400000,
+   "result": [
+    {
+     "id": "daily::29847090",
+     "start": 1790825400000,
+     "end": 1790827200000
+    },
+    {
+     "id": "daily::29848530",
+     "start": 1790911800000,
+     "end": 1790913600000
+    },
+    {
+     "id": "daily::29849970",
+     "start": 1790998200000,
+     "end": 1791000000000
+    },
+    {
+     "id": "daily::29851410",
+     "start": 1791084600000,
+     "end": 1791086400000
+    },
+    {
+     "id": "daily::29852850",
+     "start": 1791171000000,
+     "end": 1791172800000
+    },
+    {
+     "id": "daily::29854290",
+     "start": 1791257400000,
+     "end": 1791259200000
+    },
+    {
+     "id": "daily::29855730",
+     "start": 1791343800000,
+     "end": 1791345600000
+    },
+    {
+     "id": "daily::29857170",
+     "start": 1791430200000,
+     "end": 1791432000000
+    },
+    {
+     "id": "daily::29858610",
+     "start": 1791516600000,
+     "end": 1791518400000
+    },
+    {
+     "id": "daily::29860050",
+     "start": 1791603000000,
+     "end": 1791604800000
+    },
+    {
+     "id": "daily::29861490",
+     "start": 1791689400000,
+     "end": 1791691200000
+    },
+    {
+     "id": "daily::29862930",
+     "start": 1791775800000,
+     "end": 1791777600000
+    },
+    {
+     "id": "daily::29864370",
+     "start": 1791862200000,
+     "end": 1791864000000
+    },
+    {
+     "id": "daily::29865810",
+     "start": 1791948600000,
+     "end": 1791950400000
+    },
+    {
+     "id": "daily::29867250",
+     "start": 1792035000000,
+     "end": 1792036800000
+    },
+    {
+     "id": "daily::29868690",
+     "start": 1792121400000,
+     "end": 1792123200000
+    },
+    {
+     "id": "daily::29870130",
+     "start": 1792207800000,
+     "end": 1792209600000
+    },
+    {
+     "id": "daily::29871570",
+     "start": 1792294200000,
+     "end": 1792296000000
+    },
+    {
+     "id": "daily::29873010",
+     "start": 1792380600000,
+     "end": 1792382400000
+    },
+    {
+     "id": "daily::29874450",
+     "start": 1792467000000,
+     "end": 1792468800000
+    },
+    {
+     "id": "daily::29877330",
+     "start": 1792639800000,
+     "end": 1792641600000
+    },
+    {
+     "id": "daily::29878770",
+     "start": 1792726200000,
+     "end": 1792728000000
+    },
+    {
+     "id": "daily::29880210",
+     "start": 1792812600000,
+     "end": 1792814400000
+    },
+    {
+     "id": "daily::29881650",
+     "start": 1792899000000,
+     "end": 1792900800000
+    },
+    {
+     "id": "wkdays::29848470",
+     "start": 1790908200000,
+     "end": 1790909100000
+    },
+    {
+     "id": "wkdays::29852790",
+     "start": 1791167400000,
+     "end": 1791168300000
+    },
+    {
+     "id": "wkdays::29854230",
+     "start": 1791253800000,
+     "end": 1791254700000
+    },
+    {
+     "id": "wkdays::29855670",
+     "start": 1791340200000,
+     "end": 1791341100000
+    },
+    {
+     "id": "wkdays::29857110",
+     "start": 1791426600000,
+     "end": 1791427500000
+    },
+    {
+     "id": "wkdays::29858550",
+     "start": 1791513000000,
+     "end": 1791513900000
+    },
+    {
+     "id": "wkdays::29862870",
+     "start": 1791772200000,
+     "end": 1791773100000
+    },
+    {
+     "id": "wkdays::29864310",
+     "start": 1791858600000,
+     "end": 1791859500000
+    },
+    {
+     "id": "wkdays::29865750",
+     "start": 1791945000000,
+     "end": 1791945900000
+    },
+    {
+     "id": "wkdays::29867190",
+     "start": 1792031400000,
+     "end": 1792032300000
+    },
+    {
+     "id": "wkdays::29868630",
+     "start": 1792117800000,
+     "end": 1792118700000
+    },
+    {
+     "id": "wkdays::29872950",
+     "start": 1792377000000,
+     "end": 1792377900000
+    },
+    {
+     "id": "wkdays::29874390",
+     "start": 1792463400000,
+     "end": 1792464300000
+    },
+    {
+     "id": "wkdays::29875830",
+     "start": 1792549800000,
+     "end": 1792550700000
+    },
+    {
+     "id": "wkdays::29877270",
+     "start": 1792636200000,
+     "end": 1792637100000
+    },
+    {
+     "id": "wkdays::29878710",
+     "start": 1792722600000,
+     "end": 1792723500000
+    },
+    {
+     "id": "wkdays::29883030",
+     "start": 1792981800000,
+     "end": 1792982700000
+    },
+    {
+     "id": "wkdays::29884470",
+     "start": 1793068200000,
+     "end": 1793069100000
+    },
+    {
+     "id": "wkdays::29885910",
+     "start": 1793154600000,
+     "end": 1793155500000
+    },
+    {
+     "id": "wkdays::29887350",
+     "start": 1793241000000,
+     "end": 1793241900000
+    },
+    {
+     "id": "wkdays::29888790",
+     "start": 1793327400000,
+     "end": 1793328300000
+    },
+    {
+     "id": "wkdays::29893110",
+     "start": 1793586600000,
+     "end": 1793587500000
+    },
+    {
+     "id": "wkdays::29894550",
+     "start": 1793673000000,
+     "end": 1793673900000
+    },
+    {
+     "id": "wkdays::29895990",
+     "start": 1793759400000,
+     "end": 1793760300000
+    },
+    {
+     "id": "wkdays::29897430",
+     "start": 1793845800000,
+     "end": 1793846700000
+    },
+    {
+     "id": "wkdays::29898870",
+     "start": 1793932200000,
+     "end": 1793933100000
+    },
+    {
+     "id": "wkdays::29903190",
+     "start": 1794191400000,
+     "end": 1794192300000
+    },
+    {
+     "id": "wkdays::29904630",
+     "start": 1794277800000,
+     "end": 1794278700000
+    },
+    {
+     "id": "wkdays::29906070",
+     "start": 1794364200000,
+     "end": 1794365100000
+    },
+    {
+     "id": "wkdays::29907510",
+     "start": 1794450600000,
+     "end": 1794451500000
+    },
+    {
+     "id": "wkdays::29908950",
+     "start": 1794537000000,
+     "end": 1794537900000
+    },
+    {
+     "id": "wkdays::29913270",
+     "start": 1794796200000,
+     "end": 1794797100000
+    },
+    {
+     "id": "wkdays::29914710",
+     "start": 1794882600000,
+     "end": 1794883500000
+    },
+    {
+     "id": "wkdays::29916150",
+     "start": 1794969000000,
+     "end": 1794969900000
+    },
+    {
+     "id": "wkdays::29917590",
+     "start": 1795055400000,
+     "end": 1795056300000
+    },
+    {
+     "id": "wkdays::29919030",
+     "start": 1795141800000,
+     "end": 1795142700000
+    },
+    {
+     "id": "wkdays::29923350",
+     "start": 1795401000000,
+     "end": 1795401900000
+    },
+    {
+     "id": "wkdays::29924790",
+     "start": 1795487400000,
+     "end": 1795488300000
+    },
+    {
+     "id": "wkdays::29926230",
+     "start": 1795573800000,
+     "end": 1795574700000
+    },
+    {
+     "id": "wkdays::29927670",
+     "start": 1795660200000,
+     "end": 1795661100000
+    },
+    {
+     "id": "wkdays::29929110",
+     "start": 1795746600000,
+     "end": 1795747500000
+    },
+    {
+     "id": "wkdays::29933430",
+     "start": 1796005800000,
+     "end": 1796006700000
+    },
+    {
+     "id": "wkdays::29934870",
+     "start": 1796092200000,
+     "end": 1796093100000
+    },
+    {
+     "id": "wkdays::29936310",
+     "start": 1796178600000,
+     "end": 1796179500000
+    },
+    {
+     "id": "wkdays::29937750",
+     "start": 1796265000000,
+     "end": 1796265900000
+    },
+    {
+     "id": "wkdays::29939190",
+     "start": 1796351400000,
+     "end": 1796352300000
+    },
+    {
+     "id": "wkdays::29943510",
+     "start": 1796610600000,
+     "end": 1796611500000
+    },
+    {
+     "id": "wkdays::29944950",
+     "start": 1796697000000,
+     "end": 1796697900000
+    },
+    {
+     "id": "wkdays::29946390",
+     "start": 1796783400000,
+     "end": 1796784300000
+    },
+    {
+     "id": "wkdays::29947830",
+     "start": 1796869800000,
+     "end": 1796870700000
+    },
+    {
+     "id": "wkdays::29949270",
+     "start": 1796956200000,
+     "end": 1796957100000
+    },
+    {
+     "id": "wkdays::29953590",
+     "start": 1797215400000,
+     "end": 1797216300000
+    },
+    {
+     "id": "wkdays::29955030",
+     "start": 1797301800000,
+     "end": 1797302700000
+    },
+    {
+     "id": "wkdays::29956470",
+     "start": 1797388200000,
+     "end": 1797389100000
+    },
+    {
+     "id": "wkdays::29957910",
+     "start": 1797474600000,
+     "end": 1797475500000
+    },
+    {
+     "id": "wkdays::29959350",
+     "start": 1797561000000,
+     "end": 1797561900000
+    },
+    {
+     "id": "wkdays::29963670",
+     "start": 1797820200000,
+     "end": 1797821100000
+    },
+    {
+     "id": "wkdays::29965110",
+     "start": 1797906600000,
+     "end": 1797907500000
+    },
+    {
+     "id": "wkdays::29966550",
+     "start": 1797993000000,
+     "end": 1797993900000
+    },
+    {
+     "id": "wkdays::29967990",
+     "start": 1798079400000,
+     "end": 1798080300000
+    },
+    {
+     "id": "wkdays::29969430",
+     "start": 1798165800000,
+     "end": 1798166700000
+    },
+    {
+     "id": "wkdays::29973750",
+     "start": 1798425000000,
+     "end": 1798425900000
+    },
+    {
+     "id": "wkdays::29975190",
+     "start": 1798511400000,
+     "end": 1798512300000
+    },
+    {
+     "id": "wkdays::29976630",
+     "start": 1798597800000,
+     "end": 1798598700000
+    },
+    {
+     "id": "weekly::29854830",
+     "start": 1791289800000,
+     "end": 1791293400000
+    },
+    {
+     "id": "weekly::29864910",
+     "start": 1791894600000,
+     "end": 1791898200000
+    },
+    {
+     "id": "weekly::29874990",
+     "start": 1792499400000,
+     "end": 1792503000000
+    },
+    {
+     "id": "weekly::29885070",
+     "start": 1793104200000,
+     "end": 1793107800000
+    },
+    {
+     "id": "weekly::29895150",
+     "start": 1793709000000,
+     "end": 1793712600000
+    },
+    {
+     "id": "weekly::29905230",
+     "start": 1794313800000,
+     "end": 1794317400000
+    },
+    {
+     "id": "weekly::29915310",
+     "start": 1794918600000,
+     "end": 1794922200000
+    },
+    {
+     "id": "weekly::29925390",
+     "start": 1795523400000,
+     "end": 1795527000000
+    },
+    {
+     "id": "weekly::29935470",
+     "start": 1796128200000,
+     "end": 1796131800000
+    },
+    {
+     "id": "weekly::29945550",
+     "start": 1796733000000,
+     "end": 1796736600000
+    },
+    {
+     "id": "weekly::29955630",
+     "start": 1797337800000,
+     "end": 1797341400000
+    },
+    {
+     "id": "weekly::29965710",
+     "start": 1797942600000,
+     "end": 1797946200000
+    },
+    {
+     "id": "weekly::29975790",
+     "start": 1798547400000,
+     "end": 1798551000000
+    },
+    {
+     "id": "monthly31::29890470",
+     "start": 1793428200000,
+     "end": 1793431800000
+    },
+    {
+     "id": "yearly::29876790",
+     "start": 1792607400000,
+     "end": 1792693800000
+    },
+    {
+     "id": "alldayrep::29849430",
+     "start": 1790965800000,
+     "end": 1791138600000
+    },
+    {
+     "id": "alldayrep::29859510",
+     "start": 1791570600000,
+     "end": 1791743400000
+    },
+    {
+     "id": "alldayrep::29869590",
+     "start": 1792175400000,
+     "end": 1792348200000
+    },
+    {
+     "id": "alldayrep::29879670",
+     "start": 1792780200000,
+     "end": 1792953000000
+    },
+    {
+     "id": "alldayrep::29889750",
+     "start": 1793385000000,
+     "end": 1793557800000
+    },
+    {
+     "id": "alldayrep::29899830",
+     "start": 1793989800000,
+     "end": 1794162600000
+    },
+    {
+     "id": "alldayrep::29909910",
+     "start": 1794594600000,
+     "end": 1794767400000
+    },
+    {
+     "id": "alldayrep::29919990",
+     "start": 1795199400000,
+     "end": 1795372200000
+    },
+    {
+     "id": "alldayrep::29930070",
+     "start": 1795804200000,
+     "end": 1795977000000
+    },
+    {
+     "id": "plain",
+     "start": 1792485000000,
+     "end": 1792488600000
+    },
+    {
+     "id": "overnight",
+     "start": 1792427400000,
+     "end": 1792441800000
+    },
+    {
+     "id": "zero",
+     "start": 1792521000000,
+     "end": 1792521000000
+    },
+    {
+     "id": "multiday",
+     "start": 1792348200000,
+     "end": 1792693800000
+    }
+   ]
+  }
+ ],
+ "match": [
+  {
+   "title": "Weekly standup",
+   "loc": "",
+   "result": "A"
+  },
+  {
+   "title": "Gym session",
+   "loc": "Downtown",
+   "result": "E"
+  },
+  {
+   "title": "Coffee with Sam",
+   "loc": "",
+   "result": "F"
+  },
+  {
+   "title": "Deep work: coding",
+   "loc": "",
+   "result": "B"
+  },
+  {
+   "title": "Submit report — deadline",
+   "loc": "",
+   "result": "C"
+  },
+  {
+   "title": "Running errands",
+   "loc": "",
+   "result": null
+  },
+  {
+   "title": "Run club",
+   "loc": "",
+   "result": "E"
+  },
+  {
+   "title": "1:1 with manager",
+   "loc": "",
+   "result": "A"
+  },
+  {
+   "title": "Lunch meeting",
+   "loc": "",
+   "result": "A"
+  },
+  {
+   "title": "Dentist",
+   "loc": "",
+   "result": "E"
+  },
+  {
+   "title": "Something else",
+   "loc": "home office",
+   "result": "D"
+  },
+  {
+   "title": "Interviewing",
+   "loc": "",
+   "result": null
+  }
+ ],
+ "merge": {
+  "base": {
+   "events": [
+    {
+     "id": "mine",
+     "title": "Team standup, daily",
+     "cat": "A",
+     "source": "local",
+     "start": 1792508420000,
+     "end": 1792510200000
+    }
+   ],
+   "hidden": {
+    "file:fold-1": 1
+   }
+  },
+  "r1": {
+   "a": 4,
+   "u": 1,
+   "r": 0
+  },
+  "after1": [
+   {
+    "id": "mine",
+    "key": "file:basic-1",
+    "title": "Team standup, daily",
+    "cat": "A",
+    "start": 1792508400000,
+    "end": 1792512000000,
+    "source": "file",
+    "feed": "file"
+   },
+   {
+    "id": "*",
+    "key": "file:floating-1",
+    "title": "Floating local time",
+    "cat": "A",
+    "start": 1792555200000,
+    "end": 1792557900000,
+    "source": "file",
+    "feed": "file"
+   },
+   {
+    "id": "*",
+    "key": "file:allday-1",
+    "title": "Conference",
+    "cat": "A",
+    "start": 1792607400000,
+    "end": 1792866600000,
+    "source": "file",
+    "feed": "file"
+   },
+   {
+    "id": "*",
+    "key": "file:allday-2",
+    "title": "One day no end",
+    "cat": "A",
+    "start": 1793471400000,
+    "end": 1793557800000,
+    "source": "file",
+    "feed": "file"
+   },
+   {
+    "id": "*",
+    "key": "file:No uid|20261023T100000Z",
+    "title": "No uid",
+    "cat": "A",
+    "start": 1792749600000,
+    "end": 1792753200000,
+    "source": "file",
+    "feed": "file"
+   }
+  ],
+  "r2": {
+   "a": 0,
+   "u": 1,
+   "r": 1
+  },
+  "after2": [
+   {
+    "id": "mine",
+    "key": "file:basic-1",
+    "title": "Renamed",
+    "cat": "A",
+    "start": 1792508400000,
+    "end": 1792512000000,
+    "source": "file",
+    "feed": "file"
+   },
+   {
+    "id": "*",
+    "key": "file:floating-1",
+    "title": "Floating local time",
+    "cat": "A",
+    "start": 1792555200000,
+    "end": 1792557900000,
+    "source": "file",
+    "feed": "file"
+   },
+   {
+    "id": "*",
+    "key": "file:allday-1",
+    "title": "Conference",
+    "cat": "A",
+    "start": 1792607400000,
+    "end": 1792866600000,
+    "source": "file",
+    "feed": "file"
+   },
+   {
+    "id": "*",
+    "key": "file:No uid|20261023T100000Z",
+    "title": "No uid",
+    "cat": "A",
+    "start": 1792749600000,
+    "end": 1792753200000,
+    "source": "file",
+    "feed": "file"
+   }
+  ]
+ }
+}

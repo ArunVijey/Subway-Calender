@@ -1,0 +1,61 @@
+name: subwayboard
+description: "Subway Board departure calendar"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.6.0
+  path_provider: ^2.1.6
+  provider: ^6.1.5+1
+  timezone: ^0.11.2
+  flutter_local_notifications: ^22.3.2
+  audioplayers: ^6.8.1
+  file_picker: ^13.1.0
+  share_plus: ^13.3.1
+  url_launcher: ^6.3.3
+  flutter_svg: ^2.3.0
+  characters: ^1.4.1
+  google_sign_in: ^7.2.0
+  flutter_timezone: ^5.1.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/sounds/
+
+  fonts:
+    - family: BarlowCondensed
+      fonts:
+        - asset: assets/fonts/BarlowCondensed-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/BarlowCondensed-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/BarlowCondensed-ExtraBold.ttf
+          weight: 800
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter.ttf
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/icon/icon.png
+  remove_alpha_ios: true
+  # Transparent backdrop: the drawn calendar floats like a hand-drawn icon pack.
+  adaptive_icon_background: "#00000000"
+  adaptive_icon_foreground: assets/icon/icon-foreground.png
+  adaptive_icon_monochrome: assets/icon/icon-monochrome.png
+  adaptive_icon_foreground_inset: 0
