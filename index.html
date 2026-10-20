@@ -1,0 +1,2588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Subway Board">
+  <meta name="theme-color" content="#111111">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <title>Subway Calendar v2</title>
+  <style>
+    :root {
+      --bg: #111111; --card: #f4f4f6; --yellow: #fde047; --text-dark: #111111; --text-muted: #71717a;
+      --A: #0066ff; --B: #ff8800; --C: #ff5533; --D: #eab308; --E: #00cc66;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; }
+    body { background: #000; display: flex; justify-content: center; padding: 20px; color: #fff; overflow-x: hidden; }
+
+    @keyframes boardDrop { 0% { opacity: 0; transform: translateY(20px) scale(0.98); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+    @keyframes splitFlap { 0% { transform: perspective(600px) rotateX(-90deg); opacity: 0; } 60% { transform: perspective(600px) rotateX(12deg); opacity: 1; } 100% { transform: perspective(600px) rotateX(0deg); opacity: 1; } }
+    @keyframes livePulse { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0,0,0,0.6); } 50% { transform: scale(1.06); box-shadow: 0 0 0 5px rgba(0,0,0,0); } }
+    @keyframes yellowGlow { 0%, 100% { background-color: #fde047; } 50% { background-color: #fef08a; } }
+    @keyframes stripeSlide { 0% { background-position: 0 0; } 100% { background-position: 24px 0; } }
+    @keyframes numTick { 0% { transform: translateY(-8px) scale(1.15); opacity: 0.3; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
+    @keyframes spinOnce { 0% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(1.2); } 100% { transform: rotate(360deg) scale(1); } }
+    @keyframes sheetSpring { 0% { transform: translateY(100%); } 70% { transform: translateY(-6px); } 100% { transform: translateY(0); } }
+
+    .phone { width: 380px; background: var(--bg); border-radius: 36px; padding: 20px 16px 0; border: 4px solid #27272a; overflow: hidden; display: flex; flex-direction: column; height: 760px; position: relative; animation: boardDrop 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+        /* Full screen on phones, tablets, and when installed as an app */
+    html, body { height: 100%; }
+    body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
+    @media (max-width: 600px), (pointer: coarse), (display-mode: standalone), (display-mode: fullscreen) {
+      body { padding: 0; display: block; background: var(--bg); }
+      .phone {
+        width: 100%; max-width: 720px; margin: 0 auto;
+        height: 100vh; height: 100dvh;
+        border: none; border-radius: 0; animation: none;
+        padding: calc(12px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) 0 calc(16px + env(safe-area-inset-left));
+      }
+      .tabs { padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+      .modal-sheet { padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
+      .toast { bottom: calc(84px + env(safe-area-inset-bottom)); }
+    }
+
+    .top-bar { font-size: 10px; font-weight: 800; letter-spacing: 1px; color: #a1a1aa; display: flex; justify-content: space-between; border-bottom: 2px solid #fff; padding-bottom: 8px; margin-bottom: 14px; flex-shrink: 0; }
+    #topLeft { cursor: pointer; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; flex-shrink: 0; }
+    .date-wrap { cursor: pointer; transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); min-width: 0; }
+    .date-wrap:active { transform: scale(0.94); }
+    .date-title { font-size: 26px; font-weight: 900; line-height: 1.05; letter-spacing: -0.5px; }
+    .header-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+    .icon-btn { background: #27272a; border: none; color: #fff; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s; }
+    .icon-btn:hover { background: #3f3f46; transform: scale(1.12); }
+    .icon-btn:active { animation: spinOnce 0.4s ease; }
+    .today-pill { background: var(--yellow); color: #000; border: none; border-radius: 16px; font-size: 10px; font-weight: 900; padding: 0 10px; height: 32px; cursor: pointer; letter-spacing: 0.5px; }
+
+    .search-bar { display: none; gap: 8px; margin-bottom: 12px; flex-shrink: 0; }
+    .search-bar input { flex: 1; min-width: 0; padding: 9px 12px; border-radius: 10px; border: 1px solid #3f3f46; background: #27272a; color: #fff; font-weight: 700; font-size: 13px; outline: none; }
+    .search-bar input:focus { border-color: var(--yellow); }
+    .search-bar button { background: #27272a; border: none; color: #fff; width: 36px; border-radius: 10px; cursor: pointer; font-weight: 800; }
+
+    .filters { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-shrink: 0; }
+    .badge { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 13px; color: #fff; flex-shrink: 0; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s, box-shadow 0.2s; }
+    .badge.A { background: var(--A); } .badge.B { background: var(--B); } .badge.C { background: var(--C); }
+    .badge.D { background: var(--D); color: #000; } .badge.E { background: var(--E); }
+    .filter-btn { cursor: pointer; opacity: 0.35; user-select: none; }
+    .filter-btn:hover { opacity: 0.8; transform: translateY(-3px) scale(1.1); }
+    .filter-btn.active { opacity: 1; transform: scale(1.18); outline: 2px solid #fff; outline-offset: 2px; box-shadow: 0 4px 12px rgba(255,255,255,0.25); }
+    .all-day-pill { margin-left: auto; background: #1f2937; color: #cbd5e1; font-size: 11px; font-weight: 800; padding: 6px 12px; border-radius: 16px; cursor: pointer; opacity: 0.5; transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); user-select: none; }
+    .all-day-pill:hover { transform: scale(1.06); opacity: 0.85; }
+    .all-day-pill.active { opacity: 1; background: #fff; color: #000; transform: scale(1.08); }
+
+    .strip { display: none; gap: 6px; overflow-x: auto; margin-bottom: 10px; scrollbar-width: none; flex-shrink: 0; }
+    .strip::-webkit-scrollbar { display: none; }
+    .chip { flex-shrink: 0; background: #1f2937; color: #e5e7eb; border: 1px solid #374151; border-radius: 14px; font-size: 10px; font-weight: 800; padding: 5px 10px; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 5px; transition: transform 0.2s, background 0.2s; }
+    .chip:active { transform: scale(0.94); }
+    .cd-chip b { color: var(--yellow); }
+    .chip-dot, .m-dot { width: 8px; height: 8px; border-radius: 50%; display: block; flex-shrink: 0; }
+    .chip-dot.A, .m-dot.A { background: var(--A); } .chip-dot.B, .m-dot.B { background: var(--B); } .chip-dot.C, .m-dot.C { background: var(--C); }
+    .chip-dot.D, .m-dot.D { background: var(--D); } .chip-dot.E, .m-dot.E { background: var(--E); }
+    .habit-chip.done { background: #14532d; border-color: #22c55e; color: #dcfce7; }
+    .brief { font-size: 11px; font-weight: 700; color: var(--yellow); margin: -2px 0 10px; cursor: pointer; line-height: 1.35; flex-shrink: 0; }
+    .brief:empty { display: none; }
+
+    .col-headers { display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; color: #a1a1aa; padding: 0 4px 6px; letter-spacing: 0.5px; flex-shrink: 0; }
+
+    .board, .panel { background: var(--card); border-radius: 14px; overflow-y: auto; overflow-x: hidden; flex: 1; color: var(--text-dark); perspective: 800px; }
+    .board { touch-action: pan-y; }
+    .panel { display: none; padding: 16px 16px 24px; background: #18181b; color: #fff; animation: boardDrop 0.35s ease-out; }
+    .empty-msg { padding: 32px 20px; text-align: center; color: var(--text-muted); font-weight: 700; font-size: 13px; animation: splitFlap 0.4s ease-out; }
+
+    .row { display: flex; align-items: center; padding: 14px 12px; border-bottom: 1px solid #e4e4e7; position: relative; gap: 12px; cursor: pointer; transform-origin: top center; animation: splitFlap 0.45s cubic-bezier(0.22, 1, 0.36, 1) backwards; transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s, padding-left 0.2s; }
+    .row:hover { background: #e4e4e7; padding-left: 18px; }
+    .row:active { transform: scale(0.97); }
+    .row.live-primary { background: var(--yellow); animation: splitFlap 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards, yellowGlow 3s infinite ease-in-out; }
+    .row.live-primary .badge { background: transparent; border: 2px solid #000; color: #000; }
+    .board.still .row:not(.live-primary), .board.still .countdown { animation: none; }
+    .board.still .row.live-primary { animation: yellowGlow 3s infinite ease-in-out; }
+    .progress-bar { position: absolute; bottom: 0; left: 0; height: 5px; background: repeating-linear-gradient(45deg, #000, #000 6px, #3f3f46 6px, #3f3f46 12px); background-size: 24px 24px; animation: stripeSlide 0.8s linear infinite; transition: width 0.6s ease; }
+
+    .info { flex: 1; min-width: 0; }
+    .tags { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px; }
+    .live-tag { display: inline-block; background: #000; color: #fff; font-size: 9px; font-weight: 900; padding: 2px 5px; border-radius: 3px; letter-spacing: 0.5px; animation: livePulse 1.6s infinite; }
+    .tag { display: inline-block; font-size: 9px; font-weight: 900; padding: 2px 5px; border-radius: 3px; background: #e4e4e7; color: #3f3f46; letter-spacing: 0.5px; }
+    .tag.warn { background: #fee2e2; color: #b91c1c; }
+    .title { font-size: 15px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .meta { font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+    .row.live-primary .meta { color: #3f3f46; }
+    .time-col { text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; }
+    .countdown { font-size: 26px; font-weight: 900; letter-spacing: -1px; line-height: 1; display: inline-block; animation: numTick 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .unit { font-size: 9px; font-weight: 800; color: var(--text-muted); margin-top: 2px; }
+    .row.live-primary .unit { color: #000; }
+    .join-btn { display: inline-block; margin-top: 6px; background: #16a34a; color: #fff; font-size: 10px; font-weight: 900; padding: 4px 8px; border-radius: 6px; text-decoration: none; letter-spacing: 0.5px; }
+    .row.live-primary .join-btn { background: #000; }
+
+    .gap-row { background: repeating-linear-gradient(-45deg, #f4f4f6, #f4f4f6 8px, #ececef 8px, #ececef 16px); padding-top: 10px; padding-bottom: 10px; }
+    .gap-row .title { font-size: 11px; color: #52525b; letter-spacing: 0.5px; }
+    .gap-row .countdown { font-size: 18px; color: #52525b; }
+    .gap-badge { width: 28px; height: 28px; border-radius: 50%; border: 2px dashed #a1a1aa; flex-shrink: 0; }
+    .focus-row { background: #111; color: var(--yellow); }
+    .focus-row:hover { background: #1c1c1c; }
+    .focus-row .meta, .focus-row .unit { color: #a1a1aa; }
+    .focus-row .progress-bar { background: repeating-linear-gradient(45deg, var(--yellow), var(--yellow) 6px, #a16207 6px, #a16207 12px); background-size: 24px 24px; }
+
+    .todo-section { border-top: 6px solid #e4e4e7; }
+    .todo-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px 6px; font-size: 10px; font-weight: 900; color: var(--text-muted); letter-spacing: 0.5px; }
+    .todo-add { background: #111; color: #fff; border: none; border-radius: 10px; font-size: 10px; font-weight: 900; padding: 5px 10px; cursor: pointer; }
+    .todo-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid #e4e4e7; cursor: pointer; transition: background 0.2s; }
+    .todo-row:hover { background: #e4e4e7; }
+    .todo-row .title { font-size: 14px; }
+    .todo-row.done .title { text-decoration: line-through; color: var(--text-muted); }
+    .check { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #111; background: transparent; font-weight: 900; font-size: 13px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; margin: 0 1px; color: #111; }
+    .todo-row.done .check { background: #111; color: var(--yellow); }
+
+    .day-head { display: flex; justify-content: space-between; padding: 9px 12px 7px; background: #111; color: var(--yellow); font-size: 10px; font-weight: 900; letter-spacing: 0.5px; cursor: pointer; position: sticky; top: 0; z-index: 1; }
+    .day-head span:last-child { color: #a1a1aa; }
+    .wk-row { padding: 10px 12px; }
+    .wk-row .title { font-size: 13px; }
+    .wk-row .join-btn { margin-top: 0; }
+    .wk-empty { padding: 10px 12px; font-size: 11px; font-weight: 700; color: var(--text-muted); border-bottom: 1px solid #e4e4e7; }
+
+    .line-edit-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; animation: splitFlap 0.35s ease backwards; }
+    .line-edit-row input { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #3f3f46; background: #27272a; color: #fff; font-weight: 700; font-size: 14px; transition: border-color 0.2s, transform 0.2s; min-width: 0; }
+    .line-edit-row input:focus { border-color: var(--yellow); transform: scale(1.02); outline: none; }
+    .line-fields { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .line-edit-row input.kw { font-size: 11px; font-weight: 600; padding: 8px 10px; color: #d4d4d8; }
+
+    .modal { position: absolute; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); display: none; flex-direction: column; justify-content: flex-end; z-index: 10; }
+    .modal.open { display: flex; }
+    #askModal { z-index: 30; }
+    .modal.open .modal-sheet { animation: sheetSpring 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+    .modal-sheet { background: #18181b; padding: 20px 16px; border-radius: 24px 24px 0 0; border-top: 2px solid #3f3f46; max-height: 92%; overflow-y: auto; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; font-weight: 900; font-size: 16px; margin-bottom: 14px; gap: 8px; }
+    .x { cursor: pointer; }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 10px; font-weight: 800; color: #a1a1aa; margin-bottom: 4px; text-transform: uppercase; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #3f3f46; background: #27272a; color: #fff; font-weight: 700; font-size: 13px; color-scheme: dark; transition: border-color 0.2s; font-family: inherit; }
+    .form-group textarea { font-weight: 600; resize: vertical; }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--yellow); outline: none; }
+    .form-group input:disabled, .form-group select:disabled, .form-group textarea:disabled, .check-row input:disabled { opacity: 0.5; cursor: not-allowed; }
+    .form-row { display: flex; gap: 10px; }
+    .form-row .form-group { flex: 1; min-width: 0; }
+    .btn-row { display: flex; gap: 8px; margin-top: 6px; }
+    .submit-btn { flex: 1; background: var(--yellow); color: #000; border: none; padding: 12px; border-radius: 10px; font-weight: 900; font-size: 13px; cursor: pointer; transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .submit-btn:hover { transform: scale(1.02); }
+    .submit-btn:active { transform: scale(0.96); }
+    .secondary-btn { width: 100%; background: #27272a; color: #fff; border: 1px solid #3f3f46; padding: 10px; border-radius: 10px; font-weight: 800; font-size: 12px; cursor: pointer; margin-top: 8px; transition: transform 0.15s, background 0.2s; }
+    .secondary-btn:hover { background: #3f3f46; transform: scale(1.02); }
+    .delete-btn, .danger-btn { background: #ef4444; color: #fff; border: none; padding: 12px 16px; border-radius: 10px; font-weight: 900; font-size: 13px; cursor: pointer; transition: transform 0.15s; }
+    .delete-btn { display: none; }
+    .delete-btn:active, .danger-btn:active { transform: scale(0.94); }
+    .help-text { font-size: 11px; color: #a1a1aa; line-height: 1.4; margin-bottom: 12px; font-weight: 600; }
+    .check-row { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: #e4e4e7; margin-bottom: 12px; cursor: pointer; user-select: none; }
+    .check-row input { width: 16px; height: 16px; accent-color: var(--yellow); flex-shrink: 0; }
+    .note { display: none; font-size: 11px; line-height: 1.45; font-weight: 600; color: #fcd34d; background: #27272a; border: 1px solid #3f3f46; border-radius: 8px; padding: 8px 10px; margin-bottom: 12px; }
+    .note.show { display: block; }
+    .status-line { font-size: 11px; font-weight: 700; color: #a1a1aa; margin: 4px 0 10px; line-height: 1.4; min-height: 15px; }
+    .status-line.ok { color: #4ade80; } .status-line.err { color: #f87171; }
+    .section-title { font-size: 10px; font-weight: 800; color: #a1a1aa; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 8px; }
+    .hr { border: none; border-top: 1px solid #3f3f46; margin: 16px 0; }
+
+    .seg { display: flex; background: #27272a; border-radius: 10px; padding: 3px; margin-bottom: 12px; }
+    .seg button { flex: 1; background: transparent; border: none; color: #a1a1aa; font-weight: 900; font-size: 11px; padding: 8px; border-radius: 8px; cursor: pointer; }
+    .seg button.active { background: var(--yellow); color: #000; }
+    .quick { display: flex; gap: 6px; margin-bottom: 4px; }
+    .quick input { flex: 1; min-width: 0; padding: 10px; border-radius: 8px; border: 1px dashed #52525b; background: #111; color: #fff; font-weight: 700; font-size: 13px; outline: none; }
+    .quick input:focus { border-color: var(--yellow); border-style: solid; }
+    .quick button { background: var(--yellow); border: none; border-radius: 8px; width: 42px; font-size: 16px; cursor: pointer; }
+    .quick-hint { font-size: 11px; font-weight: 700; color: #4ade80; margin-bottom: 10px; line-height: 1.4; }
+    .kind-todo .ev-only, .kind-event .todo-only { display: none !important; }
+
+    .mini-btn { background: #27272a; border: none; color: #fff; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-weight: 900; font-size: 14px; }
+    .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 8px; }
+    .m-head { text-align: center; font-size: 10px; font-weight: 800; color: #71717a; padding: 4px 0; }
+    .m-cell { background: #27272a; border: none; border-radius: 8px; color: #fff; font-weight: 800; font-size: 13px; height: 42px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; transition: transform 0.15s; }
+    .m-cell:active { transform: scale(0.92); }
+    .m-cell.other { opacity: 0.35; }
+    .m-cell.today { outline: 2px solid var(--yellow); outline-offset: -2px; }
+    .m-cell.sel { background: var(--yellow); color: #000; }
+    .m-dots { display: flex; gap: 2px; height: 5px; }
+    .m-dot { width: 5px; height: 5px; }
+
+    .feed-row, .cal-row { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
+    .feed-row input { flex: 1; min-width: 0; padding: 9px; border-radius: 8px; border: 1px solid #3f3f46; background: #27272a; color: #fff; font-size: 12px; font-weight: 600; }
+    .feed-row select, .cal-row select { width: 84px; padding: 9px 6px; border-radius: 8px; border: 1px solid #3f3f46; background: #27272a; color: #fff; font-size: 11px; font-weight: 700; color-scheme: dark; flex-shrink: 0; }
+    .cal-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .x-btn { background: #27272a; border: 1px solid #3f3f46; color: #a1a1aa; width: 30px; height: 30px; border-radius: 8px; cursor: pointer; flex-shrink: 0; font-weight: 800; }
+
+    .stats-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; text-align: center; font-weight: 900; font-size: 14px; }
+    .stats-head small { display: block; font-size: 11px; color: #a1a1aa; font-weight: 700; margin-top: 2px; }
+    .stat-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+    .stat-card { background: #27272a; border-radius: 10px; padding: 10px 6px; text-align: center; }
+    .stat-card b { display: block; font-size: 18px; font-weight: 900; color: var(--yellow); }
+    .stat-card span { font-size: 9px; font-weight: 800; color: #a1a1aa; text-transform: uppercase; }
+    .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .bar-wrap { flex: 1; min-width: 0; }
+    .bar-label { display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; margin-bottom: 4px; }
+    .bar-label span { color: #a1a1aa; }
+    .bar-track { height: 8px; background: #27272a; border-radius: 4px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+    .habit-row { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid #27272a; }
+    .habit-name { flex: 1; min-width: 0; font-weight: 800; font-size: 13px; overflow: hidden; text-overflow: ellipsis; }
+    .habit-name small { display: block; font-size: 10px; color: #a1a1aa; font-weight: 700; margin-top: 2px; }
+    .habit-week { display: flex; gap: 3px; }
+    .hday { width: 20px; height: 20px; border-radius: 50%; border: 1px solid #3f3f46; background: transparent; color: #71717a; font-size: 9px; font-weight: 900; cursor: pointer; padding: 0; }
+    .hday.done { background: #22c55e; border-color: #22c55e; color: #052e16; }
+    .habit-add { display: flex; gap: 8px; margin-top: 12px; }
+    .habit-add input { flex: 1; min-width: 0; padding: 10px; border-radius: 8px; border: 1px solid #3f3f46; background: #27272a; color: #fff; font-weight: 700; font-size: 13px; outline: none; }
+    .habit-add input:focus { border-color: var(--yellow); }
+
+    .toast { position: absolute; left: 50%; bottom: 82px; transform: translateX(-50%) translateY(20px); background: #fff; color: #000; font-size: 12px; font-weight: 800; padding: 10px 14px; border-radius: 12px; opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.25s; z-index: 40; max-width: 92%; display: flex; align-items: center; gap: 10px; line-height: 1.35; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.has-action { pointer-events: auto; }
+    .toast button { background: #111; color: var(--yellow); border: none; border-radius: 8px; padding: 6px 10px; font-weight: 900; font-size: 11px; cursor: pointer; flex-shrink: 0; }
+
+    .tabs { display: flex; justify-content: space-around; padding: 10px 0 18px; background: var(--bg); font-size: 10px; font-weight: 800; color: #71717a; flex-shrink: 0; }
+    .tab { text-align: center; cursor: pointer; user-select: none; transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s; }
+    .tab:hover { transform: translateY(-3px); color: #fff; }
+    .tab:active { transform: scale(0.9); }
+    .tab.active { color: var(--yellow); transform: scale(1.1); }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <div class="top-bar"><span id="topLeft">SUBWAY BOARD</span><span id="activeFilterLabel">ALL LINES</span></div>
+
+    <div class="header">
+      <div class="date-wrap" id="dateWrap" title="Pick a date"><div class="date-title" id="dateDisplay"></div></div>
+      <div class="header-actions">
+        <button class="today-pill" id="todayBtn">TODAY</button>
+        <button class="icon-btn" id="searchBtn" title="Search (/)">🔍</button>
+        <button class="icon-btn" id="syncModalBtn" title="Sync, alerts & data">🔄</button>
+      </div>
+    </div>
+
+    <div class="search-bar" id="searchBar">
+      <input type="search" id="searchInput" placeholder="Search events & to-dos" autocomplete="off">
+      <button id="searchClose">✕</button>
+    </div>
+
+    <div class="filters" id="filters">
+      <div class="badge A filter-btn" data-cat="A">A</div>
+      <div class="badge B filter-btn" data-cat="B">B</div>
+      <div class="badge C filter-btn" data-cat="C">C</div>
+      <div class="badge D filter-btn" data-cat="D">D</div>
+      <div class="badge E filter-btn" data-cat="E">E</div>
+      <div class="all-day-pill" id="allDayBtn">◆ ALL-DAY</div>
+    </div>
+
+    <div class="strip" id="countdownStrip"></div>
+    <div class="strip" id="habitStrip"></div>
+    <div class="brief" id="brief"></div>
+
+    <div class="col-headers" id="colHeaders"><span id="colLeft">DEPARTURES (TAP TO EDIT)</span><span id="colRight">TIME</span></div>
+    <div class="board" id="board"></div>
+
+    <div class="panel" id="linesView">
+      <div style="font-weight:900; font-size:14px; margin-bottom:10px; color:#a1a1aa;">CUSTOMIZE SUBWAY LINES</div>
+      <p class="help-text">Name each line and give it keywords. Imported and synced events, and quick-add text, are sorted onto a line by matching words in the title or location. Lines you pick by hand are always kept.</p>
+      <div id="linesList"></div>
+      <div class="form-group">
+        <label>Events with no keyword match go to</label>
+        <select id="fallbackCat"></select>
+      </div>
+      <button class="submit-btn" id="saveLinesBtn" style="width:100%">SAVE LINES</button>
+      <button class="secondary-btn" id="reapplyBtn">↻ Re-sort synced events by keywords</button>
+    </div>
+
+    <div class="panel" id="statsView"></div>
+
+    <!-- Add / Edit modal -->
+    <div class="modal" id="addModal">
+      <div class="modal-sheet">
+        <div class="modal-header"><span id="modalTitle">NEW DEPARTURE</span><span class="x" id="closeModal">✕</span></div>
+        <div class="seg" id="kindSeg"><button data-kind="event" class="active">EVENT</button><button data-kind="todo">TO-DO</button></div>
+        <div class="quick" id="quickWrap">
+          <input type="text" id="quickInput" placeholder='Try "lunch with Sam tomorrow 1pm at Nopa"' autocomplete="off">
+          <button id="quickBtn" title="Fill in the form">⚡</button>
+        </div>
+        <p class="quick-hint" id="quickHint"></p>
+        <p class="note" id="evNote"></p>
+        <div class="form-group"><label>Title</label><input type="text" id="evTitle" placeholder="e.g. Design Sync"></div>
+        <div class="form-row">
+          <div class="form-group"><label>Line</label><select id="evCat"></select></div>
+          <div class="form-group ev-only"><label>Location</label><input type="text" id="evLoc" placeholder="Room / Link"></div>
+          <div class="form-group todo-only"><label>Due date</label><input type="date" id="tdDate"></div>
+        </div>
+        <div class="ev-only">
+          <label class="check-row"><input type="checkbox" id="evAllDay"> All-day event</label>
+          <div class="form-row">
+            <div class="form-group"><label>Start date</label><input type="date" id="evStartDate"></div>
+            <div class="form-group time-field"><label>Start time</label><input type="time" id="evStartTime"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>End date</label><input type="date" id="evEndDate"></div>
+            <div class="form-group time-field"><label>End time</label><input type="time" id="evEndTime"></div>
+          </div>
+          <div class="form-row" id="repeatRow">
+            <div class="form-group"><label>Repeat</label>
+              <select id="evRepeat">
+                <option value="">Doesn't repeat</option><option value="daily">Every day</option><option value="weekdays">Every weekday</option>
+                <option value="weekly">Every week</option><option value="monthly">Every month</option><option value="yearly">Every year</option>
+              </select>
+            </div>
+            <div class="form-group" id="untilWrap"><label>Until (optional)</label><input type="date" id="evUntil"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Reminder</label>
+              <select id="evRemind">
+                <option value="" id="remindDefaultOpt">Default</option><option value="-1">No alerts</option><option value="0">At start only</option>
+                <option value="5">5 min before</option><option value="10">10 min before</option><option value="15">15 min before</option>
+                <option value="30">30 min before</option><option value="60">1 hour before</option>
+              </select>
+            </div>
+            <div class="form-group" style="display:flex; align-items:flex-end;"><label class="check-row" style="margin-bottom:10px; text-transform:none; font-size:12px; color:#e4e4e7;"><input type="checkbox" id="evCountdown"> Pin countdown</label></div>
+          </div>
+          <div class="form-group"><label>Notes</label><textarea id="evNotes" rows="3" placeholder="Agenda, address, phone, meeting link…"></textarea></div>
+        </div>
+        <label class="check-row todo-only" id="tdDoneRow"><input type="checkbox" id="tdDone"> Done</label>
+        <div class="btn-row">
+          <button class="delete-btn" id="deleteEventBtn">DELETE</button>
+          <button class="submit-btn" id="saveEventBtn">SAVE</button>
+        </div>
+        <div class="btn-row ev-only">
+          <button class="secondary-btn" id="focusBtn">🎯 Focus timer</button>
+          <button class="secondary-btn" id="gcalPushBtn">📅 Google</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sync / alerts / data modal -->
+    <div class="modal" id="syncModal">
+      <div class="modal-sheet">
+        <div class="modal-header"><span>SYNC, ALERTS &amp; DATA</span><span class="x" id="closeSyncModal">✕</span></div>
+        <div class="form-group">
+          <label>Sync method</label>
+          <select id="syncMode">
+            <option value="none">Off: this device only</option>
+            <option value="ical">Google iCal links: read-only</option>
+            <option value="api">Google Calendar API: two-way</option>
+          </select>
+        </div>
+
+        <div id="icalSection">
+          <p class="help-text">Pulls each calendar when the board opens, when you come back to it, and every 10 minutes while it's open. <strong>Read-only:</strong> changes made here don't go back to Google. Pick a line for each link, or "Auto" to sort by keywords.</p>
+          <div id="feedList"></div>
+          <button class="secondary-btn" id="addFeedBtn" style="margin-top:0">+ Add a calendar link</button>
+          <div class="form-group" style="margin-top:12px"><label>CORS proxy (optional)</label><input type="text" id="proxyInput" placeholder="https://your-proxy.example/?url=" autocomplete="off"></div>
+          <p class="note show">⚠ Google blocks browsers from reading iCal links directly, so links are sent through this proxy if one is set. Whoever runs the proxy can see your secret URLs and read those calendars. Use one you trust, clear the field to turn it off, or switch to API sync.</p>
+        </div>
+
+        <div id="apiSection">
+          <p class="help-text">Two-way sync: events you add, edit, or delete here are updated in Google Calendar. Needs a free OAuth Client ID from Google Cloud, and the board must be opened from a web address (http/https), not a file on disk.</p>
+          <div class="form-group"><label>OAuth Client ID</label><input type="text" id="clientIdInput" placeholder="1234-abc.apps.googleusercontent.com" autocomplete="off"></div>
+          <div class="btn-row">
+            <button class="secondary-btn" id="connectBtn" style="margin-top:0; flex:1;">🔐 Connect Google</button>
+            <button class="secondary-btn" id="disconnectBtn" style="margin-top:0; flex:1;">Disconnect</button>
+          </div>
+          <div class="section-title" style="margin-top:14px">Calendars to show</div>
+          <div id="calList"></div>
+          <div class="form-group" id="defaultCalRow"><label>New events go to</label><select id="defaultCal"></select></div>
+          <button class="secondary-btn" id="refreshCalsBtn" style="margin-top:0">↻ Refresh calendar list</button>
+        </div>
+
+        <div class="status-line" id="syncStatus"></div>
+        <button class="submit-btn" id="fetchGcalBtn" style="width:100%">SAVE &amp; SYNC NOW</button>
+        <button class="secondary-btn" id="restoreHiddenBtn">Restore hidden events</button>
+
+        <hr class="hr">
+        <div class="section-title">Alerts</div>
+        <label class="check-row"><input type="checkbox" id="soundToggle"> Chime for reminders and departures</label>
+        <label class="check-row"><input type="checkbox" id="notifyToggle"> Show notifications</label>
+        <div class="form-group">
+          <label>Default reminder</label>
+          <select id="remindDefault">
+            <option value="-1">No alerts</option><option value="0">At start only</option><option value="5">5 min before</option>
+            <option value="10">10 min before</option><option value="15">15 min before</option><option value="30">30 min before</option><option value="60">1 hour before</option>
+          </select>
+        </div>
+        <p class="help-text">Alerts work while the board is open, including in a background tab. Tap the board once after opening so the browser allows sound.</p>
+
+        <hr class="hr">
+        <div class="section-title">Calendar files</div>
+        <div class="form-row">
+          <input type="file" id="icsFile" accept=".ics,text/calendar" style="display:none">
+          <button class="secondary-btn" id="importBtn" style="margin-top:0; flex:1;">📥 Import .ics</button>
+          <button class="secondary-btn" id="exportBtn" style="margin-top:0; flex:1;">📤 Export .ics</button>
+        </div>
+
+        <hr class="hr">
+        <div class="section-title">Your data</div>
+        <div class="form-row">
+          <input type="file" id="restoreFile" accept=".json,application/json" style="display:none">
+          <button class="secondary-btn" id="backupBtn" style="margin-top:0; flex:1;">💾 Back up all</button>
+          <button class="secondary-btn" id="restoreBtn" style="margin-top:0; flex:1;">♻ Restore</button>
+        </div>
+        <p class="help-text" style="margin-top:8px">Backups include events, to-dos, habits, lines, and settings, including your calendar links, so keep the file private.</p>
+        <button class="secondary-btn" id="resetBtn">↺ Replace events with sample data</button>
+      </div>
+    </div>
+
+    <!-- Month picker -->
+    <div class="modal" id="monthModal">
+      <div class="modal-sheet">
+        <div class="modal-header">
+          <span id="monthTitle"></span>
+          <span style="display:flex; gap:6px; align-items:center;">
+            <button class="mini-btn" id="monthPrev">‹</button><button class="mini-btn" id="monthNext">›</button><span class="x" id="closeMonth" style="margin-left:6px">✕</span>
+          </span>
+        </div>
+        <div class="month-grid" id="monthGrid"></div>
+        <button class="secondary-btn" id="monthToday">Jump to today</button>
+      </div>
+    </div>
+
+    <!-- Choice dialog -->
+    <div class="modal" id="askModal">
+      <div class="modal-sheet">
+        <div class="modal-header"><span id="askTitle"></span></div>
+        <p class="help-text" id="askText"></p>
+        <div id="askBtns"></div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"><span id="toastMsg"></span><button id="toastAction"></button></div>
+
+    <div class="tabs">
+      <div class="tab active" id="tabBoard">🚇<br>BOARD</div>
+      <div class="tab" id="tabWeek">🗓️<br>WEEK</div>
+      <div class="tab" id="tabAdd">⚡<br>ADD</div>
+      <div class="tab" id="tabStats">📊<br>STATS</div>
+      <div class="tab" id="tabLines">🎨<br>LINES</div>
+    </div>
+  </div>
+
+  <script>
+        // ================= PWA =================
+    let swReg = null;
+    if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+      navigator.serviceWorker.register('sw.js').then(r => { swReg = r; }).catch(() => {});
+    }
+
+    // ================= Helpers =================
+    const DAY = 86400000;
+    const CATS = ['A', 'B', 'C', 'D', 'E'];
+    const WD3 = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+    const $ = id => document.getElementById(id);
+    const pad = n => String(n).padStart(2, '0');
+    const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const escapeRegex = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const offsetMin = mins => Date.now() + mins * 60000;
+    const toLocalDateStr = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const dateStrToLocalMs = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d).getTime(); };
+    const toTimeInputStr = ms => { const d = new Date(ms); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+    const startOfLocalDay = ms => { const d = new Date(ms); d.setHours(0, 0, 0, 0); return d.getTime(); };
+    const addLocalDays = (ms, n) => { const d = new Date(ms); d.setDate(d.getDate() + n); return d.getTime(); };
+    const weekStartOf = ms => addLocalDays(startOfLocalDay(ms), -((new Date(ms).getDay() + 6) % 7));
+    const dayDiff = (a, b) => Math.round((startOfLocalDay(b) - startOfLocalDay(a)) / DAY);
+    const todayStr = () => toLocalDateStr(new Date());
+    const roundUp5 = ms => Math.ceil(ms / 300000) * 300000;
+    const formatTime = ms => new Date(ms).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    const formatShortDate = ms => new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const hhmm = ms => new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+    const fmtHours = ms => ms < 3600000 ? `${Math.round(ms / 60000)} min` : `${Math.round(ms / 360000) / 10} h`;
+    const fmtMins = m => m >= 60 ? `${Math.floor(m / 60)}:${pad(m % 60)}` : String(m);
+    const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    const minuteKey = ms => Math.round(ms / 60000);
+    const validCat = c => CATS.includes(c) ? c : 'A';
+    const loadJSON = (key, fallback) => { try { const v = JSON.parse(localStorage.getItem(key)); return v ?? fallback; } catch { return fallback; } };
+
+    // ================= Constants & defaults =================
+    const REPEAT_RULES = { daily: 'FREQ=DAILY', weekdays: 'FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR', weekly: 'FREQ=WEEKLY', monthly: 'FREQ=MONTHLY', yearly: 'FREQ=YEARLY' };
+    const REPEAT_LABELS = { daily: 'Every day', weekdays: 'Every weekday', weekly: 'Every week', monthly: 'Every month', yearly: 'Every year' };
+    const defaultLines = { A: 'Work', B: 'Deep Work', C: 'Urgent', D: 'Social', E: 'Personal' };
+    const defaultKeywords = {
+      A: 'meeting, sync, standup, review, call, 1:1, interview, presentation, client',
+      B: 'focus, deep work, writing, coding, study, research, planning',
+      C: 'urgent, deadline, due, asap, critical, submit, launch',
+      D: 'coffee, lunch, dinner, drinks, party, birthday, hangout, catch up',
+      E: 'gym, workout, doctor, dentist, errand, family, personal, appointment, vacation'
+    };
+    const defaultSettings = () => ({
+      mode: 'none', feeds: [], proxy: 'https://api.allorigins.win/raw?url=', clientId: '',
+      calendars: [], defaultCalId: 'primary', keywords: { ...defaultKeywords }, fallbackCat: 'A',
+      sound: true, notify: false, remindDefault: 10, lastSync: 0, lastSyncMsg: '', lastSyncError: ''
+    });
+
+    function getSampleEvents() {
+      const today = startOfLocalDay(Date.now());
+      const at = (dayOff, h, m = 0) => { const d = new Date(addLocalDays(today, dayOff)); d.setHours(h, m, 0, 0); return d.getTime(); };
+      return [
+        { id: newId(), source: 'local', cat: 'D', title: 'Coffee with Team', loc: 'Kitchen 2F', start: offsetMin(-15), end: offsetMin(10), allDay: false },
+        { id: newId(), source: 'local', cat: 'A', title: 'Cross-Functional Launch Readiness', loc: 'Studio 4A · Video Call', notes: 'Join: https://zoom.us/j/123456789', start: offsetMin(-5), end: offsetMin(23), allDay: false },
+        { id: newId(), source: 'local', cat: 'A', title: 'Morning Standup', loc: 'Zoom Room B', start: offsetMin(18), end: offsetMin(33), allDay: false },
+        { id: newId(), source: 'local', cat: 'B', title: 'Deep Work', loc: 'Focus Block', start: offsetMin(90), end: offsetMin(150), allDay: false },
+        { id: newId(), source: 'local', cat: 'C', title: 'Q4 Roadmap Deadline', loc: 'Company-wide', start: today, end: addLocalDays(today, 1), allDay: true },
+        { id: newId(), source: 'local', cat: 'A', title: 'Weekly 1:1 with Manager', loc: 'Video call', notes: 'https://meet.google.com/abc-defg-hij', start: at(1, 10), end: at(1, 10, 30), allDay: false, repeat: { freq: 'weekly', until: '' } },
+        { id: newId(), source: 'local', cat: 'E', title: 'Vacation ✈️', loc: 'Lisbon', start: at(12, 0), end: at(15, 0), allDay: true, countdown: true }
+      ];
+    }
+    function sampleTasks() {
+      const t = todayStr(), y = toLocalDateStr(new Date(addLocalDays(Date.now(), -1)));
+      return [
+        { id: newId(), title: 'Send launch checklist to the team', cat: 'A', date: t, done: false, doneDate: null },
+        { id: newId(), title: 'Book dentist appointment', cat: 'E', date: y, done: false, doneDate: null }
+      ];
+    }
+    function sampleHabits() {
+      const d1 = toLocalDateStr(new Date(addLocalDays(Date.now(), -1))), d2 = toLocalDateStr(new Date(addLocalDays(Date.now(), -2)));
+      return [{ id: newId(), name: 'Workout', log: { [d1]: 1, [d2]: 1 } }, { id: newId(), name: 'Read 20 min', log: { [d1]: 1 } }];
+    }
+
+    function normalizeEvent(e) {
+      if (!e || typeof e !== 'object') return null;
+      const ev = { ...e };
+      if (ev.id == null) ev.id = newId();
+      ev.cat = validCat(ev.cat);
+      ev.title = String(ev.title ?? 'Untitled');
+      ev.loc = String(ev.loc ?? '');
+      ev.notes = String(ev.notes ?? '');
+      ev.start = Number(ev.start);
+      ev.end = Number(ev.end);
+      if (!isFinite(ev.start)) return null;
+      if (!isFinite(ev.end) || ev.end < ev.start) ev.end = ev.start + 3600000;
+      ev.allDay = !!ev.allDay;
+      if (!ev.source) ev.source = ev.uid ? 'legacy' : 'local';
+      if (ev.repeat && !REPEAT_RULES[ev.repeat.freq]) delete ev.repeat;
+      if (ev.exdates && !Array.isArray(ev.exdates)) delete ev.exdates;
+      if (ev.allDay) {
+        const s = startOfLocalDay(ev.start);
+        const days = Math.max(1, Math.round((startOfLocalDay(ev.end - 1) - s) / DAY) + 1);
+        ev.start = s;
+        ev.end = addLocalDays(s, days);
+      }
+      return ev;
+    }
+
+    // ================= State (v2 storage, imports v1 once) =================
+    const STORE_KEY = 'subway2';
+
+    function upgrade(s) {
+      s = s || {};
+      const out = {};
+      out.v = 2;
+      out.lines = { ...defaultLines };
+      CATS.forEach(c => { if (s.lines && typeof s.lines[c] === 'string' && s.lines[c].trim()) out.lines[c] = s.lines[c]; });
+      out.settings = { ...defaultSettings(), ...(s.settings || {}) };
+      out.settings.keywords = { ...defaultKeywords, ...(out.settings.keywords || {}) };
+      out.settings.fallbackCat = validCat(out.settings.fallbackCat);
+      if (!Array.isArray(out.settings.feeds)) out.settings.feeds = [];
+      if (!Array.isArray(out.settings.calendars)) out.settings.calendars = [];
+      out.events = (Array.isArray(s.events) ? s.events : getSampleEvents()).map(normalizeEvent).filter(Boolean);
+      out.tasks = Array.isArray(s.tasks) ? s.tasks.filter(t => t && t.title).map(t => ({ ...t, cat: validCat(t.cat) })) : sampleTasks();
+      out.habits = Array.isArray(s.habits) ? s.habits.filter(h => h && h.name).map(h => ({ ...h, log: h.log || {} })) : sampleHabits();
+      out.hidden = s.hidden && typeof s.hidden === 'object' && !Array.isArray(s.hidden) ? s.hidden : {};
+      out.pendingDeletes = Array.isArray(s.pendingDeletes) ? s.pendingDeletes.filter(p => p && p.gid) : [];
+      out.seriesProps = s.seriesProps && typeof s.seriesProps === 'object' ? s.seriesProps : {};
+      out.focus = s.focus && s.focus.end > Date.now() ? s.focus : null;
+      return out;
+    }
+
+    function migrateV1() {
+      const lines = loadJSON('subway_lines', null);
+      const evs = loadJSON('subway_events', null);
+      if (!lines && !evs) return null;
+      const set = loadJSON('subway_settings', null) || {};
+      const sync = loadJSON('subway_sync_state', null) || {};
+      const url = set.icalUrl || localStorage.getItem('subway_gcal_url') || '';
+      const cal = set.calendarId || 'primary';
+      const settings = { ...set, feeds: url ? [{ id: 'f1', url, cat: 'auto' }] : [], defaultCalId: cal };
+      delete settings.icalUrl;
+      delete settings.calendarId;
+      if (!set.mode) settings.mode = url ? 'ical' : 'none';
+      const events = (Array.isArray(evs) ? evs : []).map(e => {
+        const ev = { ...e };
+        if (ev.source === 'ical' && ev.key) { ev.key = 'f1:' + ev.key; ev.feed = 'f1'; }
+        else if (ev.source === 'gapi' && ev.gid) { ev.key = `g:${cal}|${ev.gid}`; ev.feed = cal; ev.calId = cal; }
+        else if (ev.source === 'file' && ev.key) ev.key = 'file:' + ev.key;
+        return ev;
+      });
+      const hidden = {};
+      (sync.hidden || []).forEach(k => {
+        if (String(k).startsWith('g:')) hidden[`g:${cal}|${String(k).slice(2)}`] = 1;
+        else { hidden['f1:' + k] = 1; hidden['file:' + k] = 1; }
+      });
+      const pendingDeletes = (sync.pendingDeletes || []).map(gid => ({ cal, gid }));
+      return { lines: lines || undefined, settings, events, hidden, pendingDeletes, tasks: [], habits: [] };
+    }
+
+    const hadV2 = !!localStorage.getItem(STORE_KEY);
+    const v1Data = hadV2 ? null : migrateV1();
+    let S = upgrade(hadV2 ? loadJSON(STORE_KEY, {}) : v1Data);
+
+    function save() {
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); }
+      catch { toast('Storage is full. Some changes may not be saved.'); }
+    }
+    save();
+
+    let selectedDateStr = todayStr();
+    let lastToday = todayStr();
+    let currentTab = 'board';
+    let searchMode = false;
+    let activeCat = null;
+    let showAllDayOnly = false;
+    let editing = null;
+    let modalKind = 'event';
+    let catTouched = false;
+    let suppressClick = false;
+    let statsWeek = null;
+    let monthCursor = null;
+    let briefGap = null;
+
+    // ================= Toast, dialogs, undo =================
+    let toastTimer = null, toastAction = null;
+    function toast(msg, action) {
+      const t = $('toast');
+      $('toastMsg').textContent = msg;
+      const b = $('toastAction');
+      toastAction = action || null;
+      b.style.display = action ? 'inline-block' : 'none';
+      if (action) b.textContent = action.label;
+      t.classList.toggle('has-action', !!action);
+      t.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { t.classList.remove('show'); toastAction = null; }, action ? 5500 : 3000);
+    }
+    $('toastAction').addEventListener('click', () => {
+      const a = toastAction;
+      toastAction = null;
+      $('toast').classList.remove('show');
+      if (a) a.fn();
+    });
+
+    let askResolve = null;
+    function ask(title, text, buttons) {
+      return new Promise(resolve => {
+        askResolve = resolve;
+        $('askTitle').textContent = title;
+        $('askText').textContent = text || '';
+        const box = $('askBtns');
+        box.innerHTML = '';
+        [...buttons, { label: 'Cancel', value: null, cls: 'secondary-btn' }].forEach(b => {
+          const el = document.createElement('button');
+          el.className = b.cls || 'submit-btn';
+          el.textContent = b.label;
+          el.style.width = '100%';
+          el.style.marginTop = '8px';
+          el.onclick = () => { $('askModal').classList.remove('open'); askResolve = null; resolve(b.value); };
+          box.appendChild(el);
+        });
+        $('askModal').classList.add('open');
+      });
+    }
+
+    let pendingSyncTimer = null;
+    const snapshot = () => JSON.stringify({ events: S.events, tasks: S.tasks, habits: S.habits, hidden: S.hidden, pendingDeletes: S.pendingDeletes });
+    function commitWithUndo(snap, msg) {
+      save();
+      renderAll();
+      toast(msg, {
+        label: 'UNDO',
+        fn: () => {
+          const o = JSON.parse(snap);
+          Object.assign(S, o);
+          S.events = S.events.map(normalizeEvent).filter(Boolean);
+          clearTimeout(pendingSyncTimer);
+          save();
+          renderAll();
+          toast('Undone.');
+        }
+      });
+    }
+    function scheduleSync(delay = 6000) {
+      clearTimeout(pendingSyncTimer);
+      pendingSyncTimer = setTimeout(() => runSync(), delay);
+    }
+
+    // ================= Lines, links =================
+    function matchCat(title, loc) {
+      const text = `${title || ''} ${loc || ''}`.toLowerCase();
+      let best = null, bestScore = 0;
+      CATS.forEach(c => {
+        (S.settings.keywords[c] || '').split(',').map(w => w.trim().toLowerCase()).filter(Boolean).forEach(w => {
+          const re = new RegExp(`(^|[^a-z0-9])${escapeRegex(w)}($|[^a-z0-9])`);
+          if (re.test(text) && w.length > bestScore) { best = c; bestScore = w.length; }
+        });
+      });
+      return best;
+    }
+    const autoCat = (title, loc) => matchCat(title, loc) || S.settings.fallbackCat || 'A';
+    const catForIncoming = (title, loc, feedCat) => CATS.includes(feedCat) ? feedCat : autoCat(title, loc);
+
+    const MEET_RE = /https?:\/\/[^\s<>"')]*(?:zoom\.us|meet\.google\.com|teams\.microsoft\.com|teams\.live\.com|webex\.com|whereby\.com|gotomeeting\.com|meet\.jit\.si|chime\.aws)[^\s<>"')]*/i;
+    function meetingLink(ev) {
+      const m = [ev.link, ev.loc, ev.notes].filter(Boolean).join(' ').match(MEET_RE);
+      return m ? m[0].replace(/[.,;]+$/, '') : null;
+    }
+
+    // ================= Sound, notifications, reminders =================
+    let audioCtx = null;
+    function getAudioCtx() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        try { audioCtx = new AC(); } catch { return null; }
+      }
+      return audioCtx;
+    }
+    ['pointerdown', 'keydown'].forEach(type => document.addEventListener(type, () => {
+      const c = getAudioCtx();
+      if (c && c.state === 'suspended') c.resume().catch(() => {});
+    }, { passive: true }));
+
+    function playChime(kind = 'start') {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+      const tone = (freq, start, dur) => {
+        const osc = ctx.createOscillator(), gain = ctx.createGain();
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.15, ctx.currentTime + start);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + start); osc.stop(ctx.currentTime + start + dur);
+      };
+      const seq = kind === 'pre' ? [[880, 0, 0.2], [880, 0.28, 0.25]]
+        : kind === 'done' ? [[523.25, 0, 0.25], [659.25, 0.22, 0.25], [783.99, 0.44, 0.5]]
+        : [[659.25, 0, 0.4], [523.25, 0.35, 0.6]];
+      try { seq.forEach(([f, s, d]) => tone(f, s, d)); } catch {}
+    }
+
+    function notify(title, body, tag) {
+      if (!S.settings.notify || !('Notification' in window) || Notification.permission !== 'granted') return;
+      if (swReg && swReg.showNotification) { swReg.showNotification(title, { body, tag }).catch(() => {}); return; }
+      try { new Notification(title, { body, tag }); } catch {}
+    }
+
+    const alerted = new Set();
+    function remindMinutes(ev) {
+      return ev.remind === '' || ev.remind == null ? Number(S.settings.remindDefault) : Number(ev.remind);
+    }
+    function fire(ev, kind, mins) {
+      if (S.settings.sound) playChime(kind);
+      if (kind === 'pre') notify(`Now boarding: ${ev.title}`, `Starts in ${mins} min · ${formatTime(ev.start)}${ev.loc ? ' · ' + ev.loc : ''}`, `${ev.id}@${ev.start}@pre`);
+      else notify(`Now departing: ${ev.title}`, `Line ${ev.cat} · ${S.lines[ev.cat]} · until ${formatTime(ev.end)}`, `${ev.id}@${ev.start}`);
+    }
+    function checkAlerts() {
+      const now = Date.now();
+      occurrences(now - DAY, now + 3 * DAY).forEach(ev => {
+        if (ev.allDay) return;
+        const r = remindMinutes(ev);
+        if (r < 0) return;
+        if (r > 0) {
+          const t = ev.start - r * 60000, k = `${ev.id}@${ev.start}@pre`;
+          if (now >= t && now < ev.start && !alerted.has(k)) { alerted.add(k); if (now - t <= 120000) fire(ev, 'pre', r); }
+        }
+        const k2 = `${ev.id}@${ev.start}`;
+        if (now >= ev.start && now <= ev.end && !alerted.has(k2)) { alerted.add(k2); if (now - ev.start <= 120000) fire(ev, 'start'); }
+      });
+      if (S.focus && now >= S.focus.end) {
+        const f = S.focus;
+        S.focus = null;
+        save();
+        if (S.settings.sound) playChime('done');
+        notify('Focus session done 🎯', f.label, 'focus');
+        toast('Focus session done 🎯 Take a break.');
+        renderCurrent(false);
+      }
+    }
+
+    // ================= iCal parsing (recurrence + time zones) =================
+    const naiveMs = w => Date.UTC(w.y, w.mo - 1, w.d, w.h, w.mi, w.s);
+    const wallFromNaive = t => { const d = new Date(t); return { y: d.getUTCFullYear(), mo: d.getUTCMonth() + 1, d: d.getUTCDate(), h: d.getUTCHours(), mi: d.getUTCMinutes(), s: d.getUTCSeconds() }; };
+    const wallFromLocal = ms => { const d = new Date(ms); return { y: d.getFullYear(), mo: d.getMonth() + 1, d: d.getDate(), h: d.getHours(), mi: d.getMinutes(), s: d.getSeconds() }; };
+    const tzFmtCache = {};
+    function tzOffsetMs(utcMs, tz) {
+      const fmt = tzFmtCache[tz] || (tzFmtCache[tz] = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      const p = {};
+      fmt.formatToParts(new Date(utcMs)).forEach(x => { p[x.type] = x.value; });
+      return Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute, +p.second) - utcMs;
+    }
+    function wallToMs(w, tz) {
+      const naive = naiveMs(w);
+      if (tz === 'UTC') return naive;
+      if (!tz) return new Date(w.y, w.mo - 1, w.d, w.h, w.mi, w.s).getTime();
+      try { const guess = naive - tzOffsetMs(naive, tz); return naive - tzOffsetMs(guess, tz); }
+      catch { return new Date(w.y, w.mo - 1, w.d, w.h, w.mi, w.s).getTime(); }
+    }
+    const toReal = (wall, tz, allDay) => allDay ? new Date(wall.y, wall.mo - 1, wall.d).getTime() : wallToMs(wall, tz);
+    const unescapeIcs = v => String(v || '').replace(/\\n/gi, '\n').replace(/\\([,;\\])/g, '$1');
+
+    function parseProps(block) {
+      const props = [];
+      block.split('\n').forEach(line => {
+        if (!line) return;
+        let i = 0, inQuote = false;
+        for (; i < line.length; i++) { const ch = line[i]; if (ch === '"') inQuote = !inQuote; else if (ch === ':' && !inQuote) break; }
+        if (i >= line.length) return;
+        const parts = line.slice(0, i).split(';');
+        const params = {};
+        parts.slice(1).forEach(p => { const eq = p.indexOf('='); if (eq > 0) params[p.slice(0, eq).toUpperCase()] = p.slice(eq + 1).replace(/^"|"$/g, ''); });
+        props.push({ name: parts[0].toUpperCase(), params, value: line.slice(i + 1) });
+      });
+      return props;
+    }
+    function parseIcsDate(prop, defaultTz = null) {
+      if (!prop || !prop.value) return null;
+      const m = prop.value.trim().match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})?(Z)?)?$/i);
+      if (!m) return null;
+      const allDay = !m[4] || (prop.params && prop.params.VALUE === 'DATE');
+      const wall = { y: +m[1], mo: +m[2], d: +m[3], h: +(m[4] || 0), mi: +(m[5] || 0), s: +(m[6] || 0) };
+      return { wall, allDay, tz: allDay ? null : (m[7] ? 'UTC' : ((prop.params && prop.params.TZID) || defaultTz)) };
+    }
+    function parseDuration(v) {
+      const m = String(v || '').trim().match(/^([+-])?P(?:(\d+)W)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/i);
+      if (!m) return null;
+      const ms = (+m[2] || 0) * 7 * DAY + (+m[3] || 0) * DAY + (+m[4] || 0) * 3600000 + (+m[5] || 0) * 60000 + (+m[6] || 0) * 1000;
+      return m[1] === '-' ? -ms : ms;
+    }
+    function syncWindow() { const now = Date.now(); return { start: startOfLocalDay(now) - 30 * DAY, end: now + 365 * DAY }; }
+
+    const WD = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 };
+    const daysInMonth = (y, m) => new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+
+    function expandRRule(ruleStr, ds, durMs, win) {
+      const r = {};
+      ruleStr.split(';').forEach(part => { const [k, v] = part.split('='); if (k && v) r[k.trim().toUpperCase()] = v.trim(); });
+      const first = toReal(ds.wall, ds.tz, ds.allDay);
+      if (!['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'].includes(r.FREQ)) return [first];
+      const interval = Math.max(1, parseInt(r.INTERVAL, 10) || 1);
+      const count = parseInt(r.COUNT, 10) || 0;
+      let until = Infinity;
+      if (r.UNTIL) {
+        const u = parseIcsDate({ value: r.UNTIL, params: {} }, ds.tz);
+        if (u) until = u.allDay ? addLocalDays(toReal(u.wall, null, true), 1) - 1 : toReal(u.wall, u.tz, false);
+      }
+      const byDay = (r.BYDAY || '').split(',').map(s => s.trim().match(/^([+-]?\d+)?(MO|TU|WE|TH|FR|SA|SU)$/i)).filter(Boolean).map(mm => ({ n: parseInt(mm[1] || '0', 10), wd: WD[mm[2].toUpperCase()] }));
+      const byMonthDay = (r.BYMONTHDAY || '').split(',').map(Number).filter(n => n && Math.abs(n) <= 31);
+      const byMonth = (r.BYMONTH || '').split(',').map(Number).filter(n => n >= 1 && n <= 12);
+      const s0 = naiveMs(ds.wall), sd = new Date(s0);
+      const day0 = Date.UTC(sd.getUTCFullYear(), sd.getUTCMonth(), sd.getUTCDate());
+      const tod = s0 - day0;
+      const winStartN = win.start - 2 * DAY, winEndN = win.end + 2 * DAY;
+      const out = [];
+      let n = 0;
+      const emit = t => {
+        if (t < s0) return true;
+        n++;
+        if (count && n > count) return false;
+        if (t > winEndN || t > until + 2 * DAY) return false;
+        if (t + durMs < winStartN) return true;
+        const real = toReal(wallFromNaive(t), ds.tz, ds.allDay);
+        if (real > until) return false;
+        out.push(real);
+        return true;
+      };
+      const monthDays = (y, m) => {
+        const len = daysInMonth(y, m), set = new Set();
+        if (byMonthDay.length) byMonthDay.forEach(d => { const day = d > 0 ? d : len + d + 1; if (day >= 1 && day <= len) set.add(day); });
+        else if (byDay.length) {
+          const firstWd = new Date(Date.UTC(y, m, 1)).getUTCDay(), lastWd = new Date(Date.UTC(y, m, len)).getUTCDay();
+          byDay.forEach(({ n: ord, wd }) => {
+            const firstHit = 1 + ((wd - firstWd + 7) % 7);
+            if (ord === 0) { for (let d = firstHit; d <= len; d += 7) set.add(d); }
+            else if (ord > 0) { const d = firstHit + (ord - 1) * 7; if (d <= len) set.add(d); }
+            else { const d = len - ((lastWd - wd + 7) % 7) + (ord + 1) * 7; if (d >= 1) set.add(d); }
+          });
+        } else if (sd.getUTCDate() <= len) set.add(sd.getUTCDate());
+        return [...set].sort((a, b) => a - b);
+      };
+      if (r.FREQ === 'DAILY') {
+        for (let k = 0; k < 100000; k++) {
+          const t = day0 + k * interval * DAY + tod, d = new Date(t);
+          if (byMonth.length && !byMonth.includes(d.getUTCMonth() + 1)) continue;
+          if (byDay.length && !byDay.some(b => b.wd === d.getUTCDay())) continue;
+          if (!emit(t)) break;
+        }
+      } else if (r.FREQ === 'WEEKLY') {
+        const offsets = (byDay.length ? byDay.map(b => b.wd) : [sd.getUTCDay()]).map(wd => (wd + 6) % 7).sort((a, b) => a - b);
+        const weekStart = day0 - ((sd.getUTCDay() + 6) % 7) * DAY;
+        let stop = false;
+        for (let w = 0; w < 20000 && !stop; w++) {
+          for (const off of offsets) { if (!emit(weekStart + w * interval * 7 * DAY + off * DAY + tod)) { stop = true; break; } }
+        }
+      } else if (r.FREQ === 'MONTHLY') {
+        const y0 = sd.getUTCFullYear(), m0 = sd.getUTCMonth();
+        let stop = false;
+        for (let k = 0; k < 6000 && !stop; k++) {
+          const mAbs = m0 + k * interval, y = y0 + Math.floor(mAbs / 12), m = mAbs % 12;
+          if (byMonth.length && !byMonth.includes(m + 1)) continue;
+          for (const day of monthDays(y, m)) { if (!emit(Date.UTC(y, m, day) + tod)) { stop = true; break; } }
+        }
+      } else {
+        const monthsList = (byMonth.length ? byMonth.map(x => x - 1) : [sd.getUTCMonth()]).sort((a, b) => a - b);
+        let stop = false;
+        for (let k = 0; k < 400 && !stop; k++) {
+          const y = sd.getUTCFullYear() + k * interval;
+          for (const m of monthsList) {
+            const days = (byMonthDay.length || byDay.length) ? monthDays(y, m) : (sd.getUTCDate() <= daysInMonth(y, m) ? [sd.getUTCDate()] : []);
+            for (const day of days) { if (!emit(Date.UTC(y, m, day) + tod)) { stop = true; break; } }
+            if (stop) break;
+          }
+        }
+      }
+      return out;
+    }
+
+    function parseIcs(text) {
+      const src = String(text).replace(/\r\n?/g, '\n').replace(/\n[ \t]/g, '');
+      const win = syncWindow();
+      const blocks = [];
+      const re = /BEGIN:VEVENT\n([\s\S]*?)\nEND:VEVENT/g;
+      let m;
+      while ((m = re.exec(src))) blocks.push(parseProps(m[1].replace(/BEGIN:VALARM[\s\S]*?END:VALARM\n?/g, '')));
+      const parsed = blocks.map(props => ({ get: n => props.find(p => p.name === n), all: n => props.filter(p => p.name === n), uid: (props.find(p => p.name === 'UID')?.value || '').trim() }));
+      const overrides = new Map();
+      parsed.forEach(p => {
+        const rid = parseIcsDate(p.get('RECURRENCE-ID'));
+        if (rid && p.uid) { if (!overrides.has(p.uid)) overrides.set(p.uid, new Set()); overrides.get(p.uid).add(minuteKey(toReal(rid.wall, rid.tz, rid.allDay))); }
+      });
+      const out = [];
+      const inWin = it => it.end >= win.start && it.start <= win.end;
+      parsed.forEach(p => {
+        const dtProp = p.get('DTSTART');
+        const ds = parseIcsDate(dtProp);
+        if (!ds) return;
+        if ((p.get('STATUS')?.value || '').trim().toUpperCase() === 'CANCELLED') return;
+        const title = unescapeIcs(p.get('SUMMARY')?.value).trim() || '(No title)';
+        const loc = unescapeIcs(p.get('LOCATION')?.value).trim();
+        const notes = unescapeIcs(p.get('DESCRIPTION')?.value).trim().slice(0, 2000);
+        const link = (p.get('URL')?.value || '').trim();
+        const uid = p.uid || `${title}|${dtProp.value}`;
+        const startMs = toReal(ds.wall, ds.tz, ds.allDay);
+        let spanDays = 1, durMs = 3600000;
+        const de = parseIcsDate(p.get('DTEND'), ds.tz);
+        const dur = parseDuration(p.get('DURATION')?.value);
+        if (ds.allDay) {
+          if (de) spanDays = Math.max(1, Math.round((naiveMs(de.wall) - naiveMs(ds.wall)) / DAY));
+          else if (dur) spanDays = Math.max(1, Math.round(dur / DAY));
+          durMs = spanDays * DAY;
+        } else if (de) durMs = Math.max(0, toReal(de.wall, de.tz, de.allDay) - startMs);
+        else if (dur != null) durMs = Math.max(0, dur);
+        const make = (s, key) => ({ key, title, loc, notes, link, start: s, end: ds.allDay ? addLocalDays(s, spanDays) : s + durMs, allDay: ds.allDay });
+        const ridProp = p.get('RECURRENCE-ID');
+        const rrule = p.get('RRULE')?.value;
+        if (ridProp) {
+          const rid = parseIcsDate(ridProp);
+          const it = make(startMs, `${uid}#${minuteKey(rid ? toReal(rid.wall, rid.tz, rid.allDay) : startMs)}`);
+          if (inWin(it)) out.push(it);
+        } else if (rrule) {
+          const ex = new Set();
+          p.all('EXDATE').forEach(x => x.value.split(',').forEach(v => { const d = parseIcsDate({ value: v, params: x.params }, ds.tz); if (d) ex.add(minuteKey(toReal(d.wall, d.tz, d.allDay))); }));
+          const ov = overrides.get(uid) || new Set();
+          expandRRule(rrule, ds, durMs, win).forEach(occ => {
+            const k = minuteKey(occ);
+            if (ex.has(k) || ov.has(k)) return;
+            const it = make(occ, `${uid}#${k}`);
+            if (inWin(it)) out.push(it);
+          });
+        } else {
+          const it = make(startMs, uid);
+          if (inWin(it)) out.push(it);
+        }
+      });
+      return out;
+    }
+
+    // ================= Local repeating events =================
+    function ruleFor(ev, forGoogle) {
+      let r = REPEAT_RULES[ev.repeat.freq];
+      if (ev.repeat.until) {
+        if (forGoogle && !ev.allDay) r += ';UNTIL=' + new Date(addLocalDays(dateStrToLocalMs(ev.repeat.until), 1) - 1000).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+        else r += ';UNTIL=' + ev.repeat.until.replace(/-/g, '');
+      }
+      return r;
+    }
+    function occurrences(from, to) {
+      const out = [];
+      S.events.forEach(ev => {
+        if (ev.repeat && REPEAT_RULES[ev.repeat.freq]) {
+          if (ev.start > to) return;
+          const dur = ev.end - ev.start;
+          const ex = new Set(ev.exdates || []);
+          expandRRule(ruleFor(ev, false), { wall: wallFromLocal(ev.start), tz: null, allDay: ev.allDay }, dur, { start: from, end: to }).forEach(s => {
+            const k = minuteKey(s);
+            if (ex.has(k)) return;
+            const e = ev.allDay ? addLocalDays(s, Math.max(1, Math.round(dur / DAY))) : s + dur;
+            if (s < to && e > from) out.push({ ...ev, id: `${ev.id}::${k}`, seriesId: ev.id, occKey: k, start: s, end: e });
+          });
+        } else if (ev.start < to && (ev.end > from || ev.start >= from)) out.push(ev);
+      });
+      return out;
+    }
+
+    // ================= Merge synced/imported events =================
+    function mergeIncoming(items, source, feedId, feedCat, reconcile) {
+      const seen = new Set(), byKey = new Map();
+      S.events.forEach((e, i) => { if (e.key) byKey.set(e.key, i); });
+      let added = 0, updated = 0, removed = 0;
+      items.forEach(it => {
+        seen.add(it.key);
+        if (S.hidden[it.key]) return;
+        let idx = byKey.has(it.key) ? byKey.get(it.key) : -1;
+        if (idx < 0) idx = S.events.findIndex(e => !e.key && (e.source === 'legacy' || e.source === 'local') && !e.repeat && e.title === it.title && Math.abs(e.start - it.start) < 60000);
+        if (idx >= 0) {
+          const prev = S.events[idx];
+          if (prev.dirty) return;
+          const changed = prev.source !== source || ['title', 'loc', 'notes', 'start', 'end', 'allDay'].some(k => prev[k] !== it[k]);
+          const cat = prev.source === 'legacy' && !prev.catManual ? catForIncoming(it.title, it.loc, feedCat) : prev.cat;
+          const next = { ...prev, ...it, source, feed: feedId, cat };
+          delete next.uid;
+          S.events[idx] = next;
+          byKey.set(it.key, idx);
+          if (changed) updated++;
+        } else {
+          const seriesHint = it.gid ? S.seriesProps[it.gid.split('_')[0]] : null;
+          S.events.push({ id: newId(), cat: catForIncoming(it.title, it.loc, feedCat), ...(seriesHint || {}), ...it, source, feed: feedId });
+          byKey.set(it.key, S.events.length - 1);
+          added++;
+        }
+      });
+      if (reconcile) {
+        const before = S.events.length;
+        S.events = S.events.filter(e => e.source !== source || e.feed !== feedId || e.dirty || seen.has(e.key));
+        removed = before - S.events.length;
+      }
+      save();
+      return { added, updated, removed };
+    }
+
+    // ================= iCal links =================
+    function feedName(f) {
+      try {
+        const u = new URL(String(f.url).replace(/^webcal:/i, 'https:'));
+        const m = u.pathname.match(/\/ical\/([^/]+)/);
+        return m ? decodeURIComponent(m[1]) : u.host;
+      } catch { return 'Calendar link'; }
+    }
+    async function fetchIcal(rawUrl) {
+      const url = rawUrl.trim().replace(/^webcal:/i, 'https:');
+      if (!/^https?:\/\//i.test(url)) throw new Error("not a calendar URL");
+      try { const r = await fetch(url, { cache: 'no-store' }); if (r.ok) return await r.text(); } catch {}
+      const proxy = (S.settings.proxy || '').trim();
+      if (!proxy) throw new Error('Google blocks direct access. Add a proxy, use API sync, or import the .ics file');
+      const proxied = proxy.includes('{url}') ? proxy.replace('{url}', encodeURIComponent(url)) : proxy + encodeURIComponent(url);
+      const r = await fetch(proxied, { cache: 'no-store' });
+      if (!r.ok) throw new Error(`proxy returned error ${r.status}`);
+      return r.text();
+    }
+
+    // ================= Google Calendar API =================
+    const GSCOPE = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.calendarlist.readonly';
+    let gToken = null, gTokenExp = 0;
+    try { const t = JSON.parse(sessionStorage.getItem('subway_gtoken')); if (t && t.exp > Date.now()) { gToken = t.token; gTokenExp = t.exp; } } catch {}
+    const gConnected = () => !!gToken && Date.now() < gTokenExp - 60000;
+    function clearToken() { gToken = null; gTokenExp = 0; sessionStorage.removeItem('subway_gtoken'); }
+
+    let gisPromise = null;
+    function loadGis() {
+      if (window.google?.accounts?.oauth2) return Promise.resolve();
+      if (!gisPromise) gisPromise = new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://accounts.google.com/gsi/client';
+        s.async = true;
+        s.onload = () => resolve();
+        s.onerror = () => { gisPromise = null; reject(new Error('Could not load Google sign-in. Check your connection.')); };
+        document.head.appendChild(s);
+      });
+      return gisPromise;
+    }
+    async function gConnect() {
+      const clientId = (S.settings.clientId || '').trim();
+      if (!clientId) throw new Error('Paste your OAuth Client ID first.');
+      if (location.protocol === 'file:') throw new Error('Google sign-in needs the board opened from a web address (http/https), not a file on disk.');
+      await loadGis();
+      return new Promise((resolve, reject) => {
+        const client = google.accounts.oauth2.initTokenClient({
+          client_id: clientId, scope: GSCOPE,
+          callback: resp => {
+            if (resp.error) return reject(new Error(resp.error_description || resp.error));
+            gToken = resp.access_token;
+            gTokenExp = Date.now() + (Number(resp.expires_in) || 3600) * 1000;
+            sessionStorage.setItem('subway_gtoken', JSON.stringify({ token: gToken, exp: gTokenExp }));
+            resolve();
+          },
+          error_callback: err => reject(new Error(err?.type === 'popup_closed' ? 'Sign-in window was closed.' : (err?.message || 'Google sign-in failed.')))
+        });
+        client.requestAccessToken();
+      });
+    }
+    async function gApi(path, opts = {}) {
+      if (!gConnected()) throw new Error('Google session expired. Tap the top bar to reconnect.');
+      const res = await fetch('https://www.googleapis.com/calendar/v3' + path, { method: opts.method || 'GET', body: opts.body, headers: { Authorization: `Bearer ${gToken}`, 'Content-Type': 'application/json' } });
+      if (res.status === 401) { clearToken(); throw new Error('Google session expired. Tap the top bar to reconnect.'); }
+      if ((res.status === 404 || res.status === 410) && opts.allowMissing) return null;
+      if (!res.ok) { let msg = `Google API error ${res.status}`; try { const j = await res.json(); if (j.error?.message) msg = j.error.message; } catch {} throw new Error(msg); }
+      return res.status === 204 ? null : res.json();
+    }
+    function fromGoogle(ge, calId) {
+      if (ge.status === 'cancelled' || !ge.start) return null;
+      const allDay = !!ge.start.date;
+      const start = allDay ? dateStrToLocalMs(ge.start.date) : Date.parse(ge.start.dateTime);
+      let end = allDay ? dateStrToLocalMs(ge.end?.date || ge.start.date) : Date.parse(ge.end?.dateTime || ge.start.dateTime);
+      if (!(end > start)) end = allDay ? addLocalDays(start, 1) : start + 3600000;
+      const video = (ge.conferenceData?.entryPoints || []).find(p => p.entryPointType === 'video');
+      return {
+        key: `g:${calId}|${ge.id}`, gid: ge.id, calId, title: ge.summary || '(No title)', loc: ge.location || '',
+        notes: (ge.description || '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').slice(0, 2000),
+        link: ge.hangoutLink || video?.uri || '', start, end, allDay
+      };
+    }
+    function toGoogleBody(ev) {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const t = ms => ev.allDay ? { date: toLocalDateStr(new Date(ms)) } : { dateTime: new Date(ms).toISOString(), timeZone: tz };
+      const body = { summary: ev.title, location: ev.loc || '', start: t(ev.start), end: t(ev.end) };
+      if (!ev.gid || ev.dirtyNotes) body.description = ev.notes || '';
+      if (ev.repeat && REPEAT_RULES[ev.repeat.freq]) body.recurrence = ['RRULE:' + ruleFor(ev, true)];
+      return body;
+    }
+    async function gPull(calId) {
+      const win = syncWindow(), items = [];
+      let pageToken = '';
+      do {
+        const q = new URLSearchParams({ timeMin: new Date(win.start).toISOString(), timeMax: new Date(win.end).toISOString(), singleEvents: 'true', orderBy: 'startTime', maxResults: '2500' });
+        if (pageToken) q.set('pageToken', pageToken);
+        const data = await gApi(`/calendars/${encodeURIComponent(calId)}/events?${q}`);
+        (data.items || []).forEach(ge => { const it = fromGoogle(ge, calId); if (it) items.push(it); });
+        pageToken = data.nextPageToken || '';
+      } while (pageToken);
+      return items;
+    }
+    async function gCalendarList() {
+      const data = await gApi('/users/me/calendarList?minAccessRole=reader&maxResults=250');
+      const st = S.settings;
+      const prev = new Map(st.calendars.map(c => [c.id, c]));
+      st.calendars = (data.items || []).map(c => {
+        const p = prev.get(c.id);
+        return { id: c.id, name: c.summaryOverride || c.summary || c.id, primary: !!c.primary, writable: c.accessRole === 'owner' || c.accessRole === 'writer', enabled: p ? p.enabled : !!c.primary, cat: p ? p.cat : 'auto' };
+      });
+      const prim = st.calendars.find(c => c.primary);
+      if (prim && (st.defaultCalId === 'primary' || !st.calendars.some(c => c.id === st.defaultCalId))) {
+        const old = st.defaultCalId;
+        st.defaultCalId = prim.id;
+        if (old === 'primary') S.events.forEach(e => { if (e.source === 'gapi' && e.feed === 'primary') { e.feed = prim.id; e.calId = prim.id; e.key = `g:${prim.id}|${e.gid}`; } });
+      }
+      save();
+    }
+    function enabledCals() {
+      const list = S.settings.calendars.filter(c => c.enabled);
+      const def = S.settings.defaultCalId || 'primary';
+      if (!list.some(c => c.id === def)) list.push(S.settings.calendars.find(c => c.id === def) || { id: def, name: def, cat: 'auto' });
+      return list;
+    }
+    async function flushPending() {
+      for (const ev of S.events.filter(e => e.dirty)) {
+        const cal = ev.calId || S.settings.defaultCalId || 'primary';
+        const path = `/calendars/${encodeURIComponent(cal)}/events`;
+        const body = JSON.stringify(toGoogleBody(ev));
+        if (ev.gid) {
+          await gApi(`${path}/${encodeURIComponent(ev.gid)}`, { method: 'PATCH', body, allowMissing: true });
+        } else {
+          const created = await gApi(path, { method: 'POST', body });
+          if (ev.repeat) {
+            S.seriesProps[created.id] = { cat: ev.cat, catManual: true, remind: ev.remind, countdown: ev.countdown };
+            S.events = S.events.filter(e => e !== ev);
+            save();
+            continue;
+          }
+          Object.assign(ev, { gid: created.id, calId: cal, feed: cal, key: `g:${cal}|${created.id}`, source: 'gapi' });
+        }
+        delete ev.dirty;
+        delete ev.dirtyNotes;
+        save();
+      }
+      for (const p of [...S.pendingDeletes]) {
+        await gApi(`/calendars/${encodeURIComponent(p.cal)}/events/${encodeURIComponent(p.gid)}`, { method: 'DELETE', allowMissing: true });
+        S.pendingDeletes = S.pendingDeletes.filter(x => x !== p);
+        delete S.hidden[`g:${p.cal}|${p.gid}`];
+        save();
+      }
+    }
+
+    // ================= Sync engine =================
+    let syncing = false;
+    async function runSync(manual = false) {
+      const st = S.settings;
+      if (syncing || st.mode === 'none' || (!navigator.onLine && !manual)) return;
+      syncing = true;
+      updateSyncUI();
+      try {
+        const tot = { added: 0, updated: 0, removed: 0 }, errors = [];
+        const addTot = r => { tot.added += r.added; tot.updated += r.updated; tot.removed += r.removed; };
+        if (st.mode === 'ical') {
+          const feeds = st.feeds.filter(f => f.url);
+          if (!feeds.length) throw new Error('Add at least one iCal link.');
+          for (const f of feeds) {
+            try {
+              const text = await fetchIcal(f.url);
+              if (!/BEGIN:VCALENDAR/i.test(text)) throw new Error("didn't return calendar data");
+              addTot(mergeIncoming(parseIcs(text).map(it => ({ ...it, key: `${f.id}:${it.key}` })), 'ical', f.id, f.cat, true));
+            } catch (e) { errors.push(`${feedName(f)}: ${e.message}`); }
+          }
+          const ids = new Set(st.feeds.map(f => f.id));
+          const before = S.events.length;
+          S.events = S.events.filter(e => e.source !== 'ical' || ids.has(e.feed));
+          tot.removed += before - S.events.length;
+        } else {
+          if (!gConnected()) {
+            if (!manual) throw new Error('Not connected. Tap the top bar to reconnect.');
+            await gConnect();
+          }
+          await flushPending();
+          if (!st.calendars.length) { try { await gCalendarList(); } catch {} }
+          const cals = enabledCals();
+          for (const c of cals) {
+            try { addTot(mergeIncoming(await gPull(c.id), 'gapi', c.id, c.cat, true)); }
+            catch (e) { if (/expired/i.test(e.message)) throw e; errors.push(`${c.name || c.id}: ${e.message}`); }
+          }
+          const ids = new Set(cals.map(c => c.id));
+          const before = S.events.length;
+          S.events = S.events.filter(e => e.source !== 'gapi' || ids.has(e.feed) || e.dirty);
+          tot.removed += before - S.events.length;
+        }
+        st.lastSync = Date.now();
+        st.lastSyncMsg = `${tot.added} new, ${tot.updated} updated, ${tot.removed} removed`;
+        st.lastSyncError = errors.join(' · ');
+      } catch (e) {
+        st.lastSyncError = e.message || 'Sync failed.';
+      } finally {
+        syncing = false;
+        save();
+        updateSyncUI();
+        renderCurrent(false);
+      }
+    }
+
+    // ================= Quick add (plain English) =================
+    const MONTH_NAMES = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+    const MONTH_RE = '(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sept|sep|oct|nov|dec)\\.?';
+    const monthIndex = s => MONTH_NAMES.findIndex(n => n.startsWith(s.toLowerCase().replace('.', '').slice(0, 3)));
+
+    function parseQuick(input) {
+      const raw = String(input || '').trim();
+      if (!raw) return null;
+      let s = ' ' + raw.replace(/\b([ap])\.m\.?/gi, '$1m') + ' ';
+      const r = { kind: 'event', allDay: false, date: null, sh: null, sm: 0, eh: null, em: 0, dur: null, repeat: '', loc: '', tonight: false };
+      const take = (re, fn) => { const m = s.match(re); if (!m) return false; s = s.slice(0, m.index) + ' ' + s.slice(m.index + m[0].length); fn(m); return true; };
+      const today0 = startOfLocalDay(Date.now());
+      const nextWd = (wd, skipToday) => { for (let i = 0; i < 8; i++) { const c = addLocalDays(today0, i); if (new Date(c).getDay() === wd && !(skipToday && i === 0)) return c; } return today0; };
+      const mkDate = (y, mo, d) => { const yr = y != null ? (y < 100 ? 2000 + y : y) : new Date().getFullYear(); let t = new Date(yr, mo, d).getTime(); if (y == null && t < today0) t = new Date(yr + 1, mo, d).getTime(); return t; };
+      const to24 = (h, ap) => { h = +h; if (ap) { ap = ap.toLowerCase(); if (ap === 'pm' && h < 12) h += 12; if (ap === 'am' && h === 12) h = 0; } return h; };
+
+      take(/^\s*(?:todo|to-do|task|remind me to)\s*:?\s+/i, () => { r.kind = 'todo'; });
+      take(/\ball[- ]day\b/i, () => { r.allDay = true; });
+
+      take(/\b(?:every\s+weekday|on\s+weekdays|weekdays)\b/i, () => { r.repeat = 'weekdays'; }) ||
+      take(/\bevery\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tues|tue|wed|thurs|thur|thu|fri|sat)\b/i, m => { r.repeat = 'weekly'; r.date = nextWd(WD3.indexOf(m[1].slice(0, 3).toLowerCase()), false); }) ||
+      take(/\b(?:every\s+day|daily)\b/i, () => { r.repeat = 'daily'; }) ||
+      take(/\b(?:every\s+week|weekly)\b/i, () => { r.repeat = 'weekly'; }) ||
+      take(/\b(?:every\s+month|monthly)\b/i, () => { r.repeat = 'monthly'; }) ||
+      take(/\b(?:every\s+year|yearly|annually)\b/i, () => { r.repeat = 'yearly'; });
+
+      if (r.date == null) {
+        take(/\b(?:the\s+)?day\s+after\s+tomorrow\b/i, () => { r.date = addLocalDays(today0, 2); }) ||
+        take(/\b(?:tomorrow|tmrw|tmr)\b/i, () => { r.date = addLocalDays(today0, 1); }) ||
+        take(/\btonight\b/i, () => { r.date = today0; r.tonight = true; }) ||
+        take(/\btoday\b/i, () => { r.date = today0; }) ||
+        take(/\bin\s+(\d{1,3})\s+days?\b/i, m => { r.date = addLocalDays(today0, +m[1]); }) ||
+        take(/\bin\s+(\d{1,2})\s+weeks?\b/i, m => { r.date = addLocalDays(today0, 7 * m[1]); }) ||
+        take(/\bnext\s+week\b/i, () => { r.date = addLocalDays(weekStartOf(today0), 7); }) ||
+        take(new RegExp(`\\b(?:on\\s+)?${MONTH_RE}\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s+(\\d{4}))?\\b`, 'i'), m => { r.date = mkDate(m[3] ? +m[3] : null, monthIndex(m[1]), +m[2]); }) ||
+        take(new RegExp(`\\b(?:on\\s+)?(?:the\\s+)?(\\d{1,2})(?:st|nd|rd|th)?\\s+(?:of\\s+)?${MONTH_RE}(?:,?\\s+(\\d{4}))?\\b`, 'i'), m => { r.date = mkDate(m[3] ? +m[3] : null, monthIndex(m[2]), +m[1]); }) ||
+        take(/\b(?:on\s+)?(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/, m => { r.date = mkDate(m[3] ? +m[3] : null, +m[1] - 1, +m[2]); }) ||
+        take(/\b(?:on\s+)?(next\s+|this\s+)?(sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tues|tue|wed|thurs|thur|thu|fri|sat)\b/i, m => { r.date = nextWd(WD3.indexOf(m[2].slice(0, 3).toLowerCase()), !!m[1] && /next/i.test(m[1])); });
+      }
+
+      take(/\b(?:from\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:-|–|to|until|till)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i, m => {
+        r.eh = to24(m[4], m[6]); r.em = +(m[5] || 0);
+        r.sh = to24(m[1], m[3] || m[6]); r.sm = +(m[2] || 0);
+        if (!m[3] && r.sh * 60 + r.sm > r.eh * 60 + r.em) r.sh = to24(m[1], 'am');
+      }) ||
+      take(/\b(?:from\s+)?(\d{1,2}):(\d{2})\s*(?:-|–|to|until|till)\s*(\d{1,2}):(\d{2})\b/i, m => { r.sh = +m[1]; r.sm = +m[2]; r.eh = +m[3]; r.em = +m[4]; }) ||
+      take(/\b(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i, m => { r.sh = to24(m[1], m[3]); r.sm = +(m[2] || 0); }) ||
+      take(/\b(?:at\s+)?(\d{1,2}):(\d{2})\b/i, m => { r.sh = +m[1]; r.sm = +m[2]; }) ||
+      take(/\b(?:at\s+)?(?:noon|midday)\b/i, () => { r.sh = 12; }) ||
+      take(/\b(?:at\s+)?midnight\b/i, () => { r.sh = 0; }) ||
+      take(/\bat\s+(\d{1,2})\b(?![\/:\d])/i, m => { let h = +m[1]; if (h >= 1 && h <= 7) h += 12; r.sh = h; });
+
+      take(/\bfor\s+half\s+an?\s+hour\b/i, () => { r.dur = 30; }) ||
+      take(/\bfor\s+(?:an?|one)\s+hour\b/i, () => { r.dur = 60; }) ||
+      take(/\bfor\s+(\d+(?:\.\d+)?)\s*(hours?|hrs?|h|minutes?|mins?|m)\b/i, m => { const v = parseFloat(m[1]); r.dur = /^h/i.test(m[2]) ? Math.round(v * 60) : Math.round(v); });
+
+      take(/\s(?:at\s+|@\s*)(.+?)\s*$/i, m => { r.loc = m[1].trim(); });
+
+      let title = s.replace(/\s+/g, ' ').trim();
+      for (let i = 0; i < 3; i++) {
+        title = title.replace(/^(?:on|at|from|for|this|next|the|@)\s+/i, '').replace(/\s+(?:on|at|from|for|this|next|the|to|by|@)$/i, '').replace(/^[,.;:\-–@\s]+|[,.;:\-–@\s]+$/g, '');
+      }
+      title = title.replace(/\s@\s/g, ' ');
+      if (!title) title = r.kind === 'todo' ? 'To-do' : 'New event';
+      r.title = title.charAt(0).toUpperCase() + title.slice(1);
+
+      if (r.sh != null && (r.sh > 23 || r.sm > 59)) r.sh = null;
+      if (r.eh != null && (r.eh > 23 || r.em > 59)) r.eh = null;
+      if (r.tonight && r.sh == null) r.sh = 19;
+      if (r.tonight && r.sh != null && r.sh < 12) r.sh += 12;
+      if (r.date == null) r.date = dateStrToLocalMs(selectedDateStr < todayStr() ? todayStr() : selectedDateStr);
+      if (r.kind === 'event' && r.sh == null) r.allDay = true;
+      if (r.allDay) { r.start = r.date; r.end = addLocalDays(r.date, 1); }
+      else if (r.kind === 'event') {
+        const s0 = new Date(r.date); s0.setHours(r.sh, r.sm, 0, 0); r.start = s0.getTime();
+        if (r.eh != null) { const e0 = new Date(r.date); e0.setHours(r.eh, r.em, 0, 0); r.end = e0.getTime(); if (r.end <= r.start) r.end = addLocalDays(r.end, 1); }
+        else r.end = r.start + (r.dur || 60) * 60000;
+      }
+      return r;
+    }
+
+    // ================= Rendering: header, strips, brief =================
+    function updateTopBar() {
+      const el = $('topLeft');
+      if (S.settings.mode === 'api' && !gConnected()) el.textContent = 'SUBWAY BOARD · TAP TO RECONNECT';
+      else if (S.settings.mode !== 'none' && S.settings.lastSyncError) el.textContent = 'SUBWAY BOARD · SYNC ⚠';
+      else el.textContent = 'SUBWAY BOARD';
+    }
+    function renderHeader() {
+      const ms = dateStrToLocalMs(selectedDateStr), d = new Date(ms);
+      if (currentTab === 'week' && !searchMode) {
+        const e = new Date(addLocalDays(ms, 6));
+        const range = d.getMonth() === e.getMonth()
+          ? `${d.toLocaleDateString('en-US', { month: 'short' })} ${d.getDate()}–${e.getDate()}`
+          : `${formatShortDate(ms)}–${formatShortDate(e.getTime())}`;
+        $('dateDisplay').innerHTML = `Week ▾<br>${range}`;
+      } else {
+        $('dateDisplay').innerHTML = d.toLocaleDateString('en-US', { weekday: 'long' }) + ' ▾<br>' + d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }
+      $('todayBtn').style.display = selectedDateStr === todayStr() ? 'none' : 'inline-block';
+      $('activeFilterLabel').textContent = activeCat ? `LINE ${activeCat}: ${S.lines[activeCat].toUpperCase()}` : 'ALL LINES';
+      updateTopBar();
+    }
+    const setColHeaders = (l, r) => { $('colLeft').textContent = l; $('colRight').textContent = r; };
+
+    function renderCountdowns() {
+      const now = Date.now(), today0 = startOfLocalDay(now);
+      const seen = new Set(), items = [];
+      occurrences(today0, now + 400 * DAY).filter(e => e.countdown && e.start >= today0).sort((a, b) => a.start - b.start).forEach(e => {
+        const id = e.seriesId || e.id;
+        if (seen.has(id)) return;
+        seen.add(id);
+        items.push(e);
+      });
+      const el = $('countdownStrip');
+      el.innerHTML = items.slice(0, 8).map(e => {
+        const n = dayDiff(now, e.start);
+        const when = n === 0 ? 'TODAY' : n === 1 ? 'TOMORROW' : `${n} DAYS`;
+        return `<button class="chip cd-chip" data-date="${toLocalDateStr(new Date(e.start))}"><span class="chip-dot ${e.cat}"></span>${escapeHtml(e.title)} · <b>${when}</b></button>`;
+      }).join('');
+      el.style.display = items.length ? 'flex' : 'none';
+    }
+
+    function streak(h) {
+      let n = 0, d = startOfLocalDay(Date.now());
+      if (!h.log[toLocalDateStr(new Date(d))]) d = addLocalDays(d, -1);
+      while (h.log[toLocalDateStr(new Date(d))]) { n++; d = addLocalDays(d, -1); }
+      return n;
+    }
+    function bestStreak(h) {
+      let best = 0, cur = 0, prev = null;
+      Object.keys(h.log).sort().forEach(k => {
+        const t = dateStrToLocalMs(k);
+        cur = prev != null && Math.round((t - prev) / DAY) === 1 ? cur + 1 : 1;
+        best = Math.max(best, cur);
+        prev = t;
+      });
+      return best;
+    }
+    function renderHabitStrip(show) {
+      const el = $('habitStrip');
+      if (!show || !S.habits.length || selectedDateStr > todayStr()) { el.style.display = 'none'; return; }
+      el.innerHTML = S.habits.map(h => {
+        const done = !!h.log[selectedDateStr], st = streak(h);
+        return `<button class="chip habit-chip ${done ? 'done' : ''}" data-habit="${escapeHtml(h.id)}">${done ? '✓' : '○'} ${escapeHtml(h.name)}${st ? ` · 🔥${st}` : ''}</button>`;
+      }).join('');
+      el.style.display = 'flex';
+    }
+
+    function briefText(o) {
+      const parts = [];
+      briefGap = null;
+      const big = o.gaps.find(g => g.end - Math.max(g.start, o.now) >= 30 * 60000);
+      if (o.isToday) {
+        const left = o.timed.filter(e => e.end >= o.now);
+        const next = left.find(e => e.start > o.now);
+        parts.push(left.length ? `${left.length} departure${left.length > 1 ? 's' : ''} left today` : 'No more departures today');
+        if (next) parts.push(`next ${formatTime(next.start)}`);
+        if (left.length) { const last = Math.max(...left.map(e => e.end)); if (last < o.dayEnd) parts.push(`free after ${formatTime(last)}`); }
+        if (big) {
+          const s = Math.max(big.start, o.now);
+          parts.push(s <= o.now + 60000 ? `free now for ${fmtHours(big.end - s)} (tap to book)` : `next free slot ${formatTime(s)} (tap to book)`);
+          const st = roundUp5(s);
+          briefGap = { start: st, end: Math.max(st + 15 * 60000, Math.min(big.end, st + 30 * 60000)) };
+        }
+      } else if (o.timed.length) {
+        parts.push(`${o.timed.length} departure${o.timed.length > 1 ? 's' : ''}`);
+        parts.push(`first ${formatTime(Math.min(...o.timed.map(e => e.start)))}`);
+        parts.push(`${fmtHours(o.timed.reduce((sum, e) => sum + Math.min(e.end, o.dayEnd) - Math.max(e.start, o.dayStart), 0))} booked`);
+      } else parts.push(o.all.length ? 'All-day events only' : 'No departures');
+      if (o.conflicts) parts.push(`⚠ ${o.conflicts} overlapping`);
+      if (o.openTodos) parts.push(`${o.openTodos} to-do${o.openTodos > 1 ? 's' : ''}`);
+      return parts.join(' · ');
+    }
+
+    // ================= Rendering: rows =================
+    function whenText(ev, dayStart, dayEnd) {
+      if (ev.allDay) {
+        const total = Math.max(1, Math.round((ev.end - ev.start) / DAY));
+        if (total <= 1) return 'All-day';
+        return `All-day · Day ${Math.round((dayStart - ev.start) / DAY) + 1} of ${total}`;
+      }
+      const s = ev.start >= dayStart ? formatTime(ev.start) : `${formatShortDate(ev.start)} ${formatTime(ev.start)}`;
+      const e = ev.end <= dayEnd ? formatTime(ev.end) : `${formatShortDate(ev.end)} ${formatTime(ev.end)}`;
+      return `${s} – ${e}`;
+    }
+
+    function eventRow(ev, o) {
+      let timeDisplay = 'ALL', unit = 'DAY';
+      if (!ev.allDay) {
+        if (o.isToday) {
+          const diff = Math.max(1, Math.ceil(((o.isLive ? ev.end : ev.start) - o.now) / 60000));
+          timeDisplay = fmtMins(diff);
+          unit = o.isLive ? 'MIN LEFT' : (diff >= 60 ? 'HR' : 'MIN');
+        } else if (ev.start < o.dayStart) {
+          if (ev.end < o.dayEnd) { timeDisplay = hhmm(ev.end); unit = 'UNTIL'; }
+        } else { timeDisplay = hhmm(ev.start); unit = 'SCHED'; }
+      }
+      const link = meetingLink(ev);
+      const tags = (o.isLive ? '<span class="live-tag">LIVE</span>' : '')
+        + (o.conflict ? '<span class="tag warn">⚠ OVERLAP</span>' : '')
+        + (ev.seriesId ? '<span class="tag">↻ REPEATS</span>' : '')
+        + (ev.countdown ? '<span class="tag">★</span>' : '');
+      const progress = o.isLive ? Math.min(100, Math.max(0, ((o.now - ev.start) / Math.max(1, ev.end - ev.start)) * 100)) : 0;
+      const row = document.createElement('div');
+      row.className = `row${o.primary ? ' live-primary' : ''}`;
+      row.innerHTML = `
+        <div class="badge ${ev.cat}">${ev.cat}</div>
+        <div class="info">
+          ${tags ? `<div class="tags">${tags}</div>` : ''}
+          <div class="title">${escapeHtml(ev.title)}</div>
+          <div class="meta">${ev.loc ? escapeHtml(ev.loc) + ' · ' : ''}${escapeHtml(S.lines[ev.cat])}<br>${escapeHtml(whenText(ev, o.dayStart, o.dayEnd))}</div>
+        </div>
+        <div class="time-col">
+          <div class="countdown">${escapeHtml(timeDisplay)}</div>
+          <div class="unit">${unit}</div>
+          ${link ? `<a class="join-btn" href="${escapeHtml(link)}" target="_blank" rel="noopener">JOIN</a>` : ''}
+        </div>
+        ${o.primary ? `<div class="progress-bar" style="width:${progress}%"></div>` : ''}`;
+      row.addEventListener('click', e => { if (suppressClick || e.target.closest('.join-btn')) return; openEventModal(ev); });
+      return row;
+    }
+
+    function gapRow(g, now) {
+      const s = Math.max(g.start, now);
+      const mins = Math.round((g.end - s) / 60000);
+      const row = document.createElement('div');
+      row.className = 'row gap-row';
+      row.innerHTML = `
+        <div class="gap-badge"></div>
+        <div class="info"><div class="title">NO SERVICE · FREE TIME</div><div class="meta">${formatTime(s)} – ${formatTime(g.end)} · tap to book</div></div>
+        <div class="time-col"><div class="countdown">${fmtMins(mins)}</div><div class="unit">${mins >= 60 ? 'HR FREE' : 'MIN FREE'}</div></div>`;
+      row.addEventListener('click', () => {
+        if (suppressClick) return;
+        const st = roundUp5(s);
+        openEventModal(null, { start: st, end: Math.max(st + 15 * 60000, Math.min(g.end, st + 30 * 60000)) });
+      });
+      return row;
+    }
+
+    function focusRow(now) {
+      const f = S.focus;
+      const left = Math.max(1, Math.ceil((f.end - now) / 60000));
+      const pct = Math.min(100, Math.max(0, ((now - f.start) / Math.max(1, f.end - f.start)) * 100));
+      const row = document.createElement('div');
+      row.className = 'row focus-row';
+      row.innerHTML = `
+        <div class="badge ${validCat(f.cat)}">🎯</div>
+        <div class="info"><div class="tags"><span class="live-tag" style="background:var(--yellow);color:#000">FOCUS</span></div><div class="title">${escapeHtml(f.label)}</div><div class="meta">Until ${formatTime(f.end)} · tap to stop</div></div>
+        <div class="time-col"><div class="countdown">${fmtMins(left)}</div><div class="unit">MIN LEFT</div></div>
+        <div class="progress-bar" style="width:${pct}%"></div>`;
+      row.addEventListener('click', async () => {
+        if (suppressClick) return;
+        const ok = await ask('Focus timer', `${left} min left on "${f.label}".`, [{ label: 'Stop timer', value: true, cls: 'danger-btn' }]);
+        if (ok) { S.focus = null; save(); renderCurrent(false); }
+      });
+      return row;
+    }
+
+    function tasksForDay(ds) {
+      const t = todayStr();
+      return S.tasks.filter(k => {
+        if (ds === t) return (!k.done && k.date <= t) || (k.done && k.doneDate === t);
+        if (ds > t) return k.date === ds;
+        return k.doneDate === ds;
+      }).sort((a, b) => (a.done - b.done) || a.date.localeCompare(b.date));
+    }
+    function todoRowHtml(t, ds) {
+      const carried = !t.done && ds && t.date < ds ? ` · carried from ${formatShortDate(dateStrToLocalMs(t.date))}` : '';
+      const due = !ds ? ` · due ${formatShortDate(dateStrToLocalMs(t.date))}` : '';
+      return `<div class="todo-row ${t.done ? 'done' : ''}" data-task="${escapeHtml(t.id)}">
+        <button class="check" data-act="toggle-todo" aria-label="Toggle done">${t.done ? '✓' : ''}</button>
+        <div class="info"><div class="title">${escapeHtml(t.title)}</div><div class="meta">Line ${t.cat} · ${escapeHtml(S.lines[t.cat])}${carried}${due}</div></div>
+      </div>`;
+    }
+    function todoSection(tasks, ds) {
+      const wrap = document.createElement('div');
+      wrap.className = 'todo-section';
+      const open = tasks.filter(t => !t.done).length;
+      wrap.innerHTML = `<div class="todo-head"><span>LOCAL TRAINS · TO-DOS${tasks.length ? ` (${open} OPEN)` : ''}</span><button class="todo-add" data-act="add-todo">+ ADD</button></div>`
+        + (tasks.length ? tasks.map(t => todoRowHtml(t, ds)).join('') : '<div class="wk-empty">Nothing on the list.</div>');
+      return wrap;
+    }
+
+    // ================= Rendering: views =================
+    function renderDay(animate) {
+      const now = Date.now();
+      const dayStart = dateStrToLocalMs(selectedDateStr), dayEnd = addLocalDays(dayStart, 1);
+      const isToday = selectedDateStr === todayStr();
+      const board = $('board');
+      const prevScroll = board.scrollTop;
+      board.classList.toggle('still', !animate);
+      setColHeaders('DEPARTURES (TAP TO EDIT)', 'TIME');
+
+      const all = occurrences(dayStart, dayEnd).filter(ev => !(isToday && !ev.allDay && now > ev.end));
+      const timed = all.filter(e => !e.allDay).sort((a, b) => a.start - b.start);
+      const conflicts = new Set();
+      for (let i = 0; i < timed.length; i++) {
+        for (let j = i + 1; j < timed.length && timed[j].start < timed[i].end; j++) { conflicts.add(timed[i].id); conflicts.add(timed[j].id); }
+      }
+      const gaps = [];
+      if (dayEnd > now) {
+        let cursor = isToday ? now : null;
+        timed.forEach(e => {
+          if (cursor != null && e.start - cursor >= 15 * 60000) gaps.push({ start: cursor, end: e.start });
+          cursor = cursor == null ? e.end : Math.max(cursor, e.end);
+        });
+      }
+      const dayTasks = tasksForDay(selectedDateStr);
+      $('brief').textContent = briefText({ all, timed, isToday, now, dayStart, dayEnd, gaps, conflicts: conflicts.size, openTodos: dayTasks.filter(t => !t.done).length });
+
+      const shown = all.filter(ev => (!activeCat || ev.cat === activeCat) && (!showAllDayOnly || ev.allDay));
+      const items = shown.map(e => ({ type: 'ev', t: e.allDay ? e.start - 1e13 : e.start, e }));
+      if (!activeCat && !showAllDayOnly) gaps.forEach(g => items.push({ type: 'gap', t: g.start - 1, g }));
+      items.sort((a, b) => a.t - b.t);
+
+      board.innerHTML = '';
+      let idx = 0;
+      const add = el => { el.style.animationDelay = animate ? `${Math.min(idx++, 12) * 0.06}s` : '0s'; board.appendChild(el); };
+      if (isToday && S.focus) add(focusRow(now));
+      let firstLive = false;
+      items.forEach(it => {
+        if (it.type === 'gap') { add(gapRow(it.g, now)); return; }
+        const ev = it.e;
+        const isLive = isToday && !ev.allDay && now >= ev.start && now <= ev.end;
+        const primary = isLive && !firstLive;
+        if (primary) firstLive = true;
+        add(eventRow(ev, { now, isToday, isLive, primary, dayStart, dayEnd, conflict: conflicts.has(ev.id) }));
+      });
+      if (!items.length && !(isToday && S.focus)) board.insertAdjacentHTML('beforeend', '<div class="empty-msg">NO SCHEDULED DEPARTURES</div>');
+      const tasks = dayTasks.filter(t => !activeCat || t.cat === activeCat);
+      if (tasks.length || selectedDateStr >= todayStr()) board.appendChild(todoSection(tasks, selectedDateStr));
+      board.scrollTop = animate ? 0 : prevScroll;
+    }
+
+    function renderWeek(animate) {
+      const board = $('board');
+      const prevScroll = board.scrollTop;
+      board.classList.toggle('still', !animate);
+      setColHeaders('NEXT 7 DAYS · TAP A DAY TO OPEN', '');
+      const start = dateStrToLocalMs(selectedDateStr), end = addLocalDays(start, 7);
+      const now = Date.now(), t = todayStr();
+      const occ = occurrences(start, end).filter(ev => (!activeCat || ev.cat === activeCat) && (!showAllDayOnly || ev.allDay));
+      board.innerHTML = '';
+      let idx = 0;
+      for (let i = 0; i < 7; i++) {
+        const d0 = addLocalDays(start, i), d1 = addLocalDays(start, i + 1), dstr = toLocalDateStr(new Date(d0));
+        const dayEv = occ.filter(e => e.start < d1 && (e.end > d0 || e.start >= d0)).sort((a, b) => (b.allDay - a.allDay) || (a.start - b.start));
+        const openTasks = tasksForDay(dstr).filter(k => !k.done).length;
+        const head = document.createElement('div');
+        head.className = 'day-head';
+        head.dataset.date = dstr;
+        head.innerHTML = `<span>${new Date(d0).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase()}${dstr === t ? ' · TODAY' : ''}</span><span>${dayEv.length} DEP${openTasks ? ` · ${openTasks} TO-DO` : ''}</span>`;
+        board.appendChild(head);
+        if (!dayEv.length) board.insertAdjacentHTML('beforeend', '<div class="wk-empty">No departures</div>');
+        dayEv.forEach(ev => {
+          const link = meetingLink(ev);
+          const r = document.createElement('div');
+          r.className = 'row wk-row';
+          r.style.animationDelay = animate ? `${Math.min(idx++, 20) * 0.03}s` : '0s';
+          if (!ev.allDay && ev.end < now) r.style.opacity = '0.5';
+          r.innerHTML = `<div class="badge ${ev.cat}">${ev.cat}</div>
+            <div class="info"><div class="title">${ev.seriesId ? '↻ ' : ''}${escapeHtml(ev.title)}</div><div class="meta">${escapeHtml(whenText(ev, d0, d1))}${ev.loc ? ' · ' + escapeHtml(ev.loc) : ''}</div></div>
+            ${link ? `<a class="join-btn" href="${escapeHtml(link)}" target="_blank" rel="noopener">JOIN</a>` : ''}`;
+          r.addEventListener('click', e => { if (suppressClick || e.target.closest('.join-btn')) return; openEventModal(ev); });
+          board.appendChild(r);
+        });
+      }
+      board.scrollTop = animate ? 0 : prevScroll;
+    }
+
+    function renderSearch() {
+      const board = $('board');
+      board.classList.add('still');
+      setColHeaders('SEARCH RESULTS', '');
+      const q = $('searchInput').value.trim().toLowerCase();
+      if (!q) { board.innerHTML = '<div class="empty-msg">TYPE TO SEARCH EVENTS & TO-DOS</div>'; return; }
+      const now = Date.now(), today0 = startOfLocalDay(now);
+      const evs = occurrences(today0 - 365 * DAY, now + 400 * DAY).filter(e => `${e.title} ${e.loc} ${e.notes || ''}`.toLowerCase().includes(q));
+      const up = evs.filter(e => e.end >= today0).sort((a, b) => a.start - b.start).slice(0, 60);
+      const past = evs.filter(e => e.end < today0).sort((a, b) => b.start - a.start).slice(0, 40);
+      const tasks = S.tasks.filter(t => t.title.toLowerCase().includes(q));
+      board.innerHTML = '';
+      const head = txt => board.insertAdjacentHTML('beforeend', `<div class="day-head"><span>${txt}</span><span></span></div>`);
+      const row = ev => {
+        const r = document.createElement('div');
+        r.className = 'row wk-row';
+        r.innerHTML = `<div class="badge ${ev.cat}">${ev.cat}</div><div class="info"><div class="title">${escapeHtml(ev.title)}</div><div class="meta">${new Date(ev.start).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })} · ${ev.allDay ? 'All-day' : formatTime(ev.start)}${ev.loc ? ' · ' + escapeHtml(ev.loc) : ''}</div></div>`;
+        r.addEventListener('click', () => { selectedDateStr = toLocalDateStr(new Date(ev.start)); closeSearch(); switchTab('board'); openEventModal(ev); });
+        board.appendChild(r);
+      };
+      if (up.length) { head('UPCOMING'); up.forEach(row); }
+      if (tasks.length) { head('TO-DOS'); board.insertAdjacentHTML('beforeend', tasks.map(t => todoRowHtml(t, null)).join('')); }
+      if (past.length) { head('PAST'); past.forEach(row); }
+      if (!up.length && !past.length && !tasks.length) board.innerHTML = '<div class="empty-msg">NO MATCHES</div>';
+    }
+
+    function renderCurrent(animate = false) {
+      renderHeader();
+      const boardLike = currentTab === 'board' || currentTab === 'week';
+      if (boardLike && !searchMode) renderCountdowns(); else $('countdownStrip').style.display = 'none';
+      const dayMode = currentTab === 'board' && !searchMode;
+      $('brief').style.display = dayMode ? '' : 'none';
+      renderHabitStrip(dayMode);
+      if (searchMode) renderSearch();
+      else if (currentTab === 'board') renderDay(animate);
+      else if (currentTab === 'week') renderWeek(animate);
+    }
+    function renderAll() {
+      renderCurrent(true);
+      if (currentTab === 'stats') renderStats();
+    }
+
+    // ================= Month picker =================
+    function openMonth() {
+      const d = new Date(dateStrToLocalMs(selectedDateStr));
+      monthCursor = new Date(d.getFullYear(), d.getMonth(), 1).getTime();
+      renderMonth();
+      $('monthModal').classList.add('open');
+    }
+    function renderMonth() {
+      const m = new Date(monthCursor);
+      $('monthTitle').textContent = m.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase();
+      const gridStart = weekStartOf(monthCursor), gridEnd = addLocalDays(gridStart, 42);
+      const dots = {};
+      occurrences(gridStart, gridEnd).forEach(e => {
+        let d = Math.max(startOfLocalDay(e.start), gridStart);
+        const last = e.allDay ? e.end - 1 : Math.max(e.start, e.end - 1);
+        for (let g = 0; d <= last && d < gridEnd && g < 42; g++) {
+          const k = toLocalDateStr(new Date(d));
+          (dots[k] = dots[k] || new Set()).add(e.cat);
+          d = addLocalDays(d, 1);
+        }
+      });
+      const t = todayStr();
+      let html = ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(x => `<div class="m-head">${x}</div>`).join('');
+      for (let i = 0; i < 42; i++) {
+        const d = new Date(addLocalDays(gridStart, i)), k = toLocalDateStr(d);
+        const cls = ['m-cell', d.getMonth() !== m.getMonth() ? 'other' : '', k === t ? 'today' : '', k === selectedDateStr ? 'sel' : ''].join(' ');
+        const ds = dots[k] ? [...dots[k]].slice(0, 3).map(c => `<i class="m-dot ${c}"></i>`).join('') : '';
+        html += `<button class="${cls}" data-date="${k}"><span>${d.getDate()}</span><div class="m-dots">${ds}</div></button>`;
+      }
+      $('monthGrid').innerHTML = html;
+    }
+
+    // ================= Stats & habits =================
+    function renderStats() {
+      if (statsWeek == null) statsWeek = weekStartOf(dateStrToLocalMs(selectedDateStr));
+      const ws = statsWeek, we = addLocalDays(ws, 7);
+      const occ = occurrences(ws, we).filter(e => !e.allDay);
+      const per = {};
+      CATS.forEach(c => { per[c] = 0; });
+      const perDay = Array(7).fill(0);
+      occ.forEach(e => {
+        const s = Math.max(e.start, ws), en = Math.min(e.end, we);
+        if (en <= s) return;
+        per[e.cat] += en - s;
+        for (let i = 0; i < 7; i++) {
+          const ov = Math.min(en, addLocalDays(ws, i + 1)) - Math.max(s, addLocalDays(ws, i));
+          if (ov > 0) perDay[i] += ov;
+        }
+      });
+      const total = CATS.reduce((a, c) => a + per[c], 0);
+      const max = Math.max(1, ...CATS.map(c => per[c]));
+      const busiest = perDay.indexOf(Math.max(...perDay));
+      const wsStr = toLocalDateStr(new Date(ws)), weStr = toLocalDateStr(new Date(we));
+      const doneTasks = S.tasks.filter(t => t.done && t.doneDate >= wsStr && t.doneDate < weStr).length;
+      const today0 = startOfLocalDay(Date.now());
+      const habitsHtml = S.habits.length ? S.habits.map(h => {
+        const days = [];
+        for (let i = 6; i >= 0; i--) {
+          const d = addLocalDays(today0, -i), k = toLocalDateStr(new Date(d));
+          days.push(`<button class="hday ${h.log[k] ? 'done' : ''}" data-act="habit-toggle" data-habit="${escapeHtml(h.id)}" data-date="${k}" title="${formatShortDate(d)}">${new Date(d).toLocaleDateString('en-US', { weekday: 'narrow' })}</button>`);
+        }
+        return `<div class="habit-row"><div class="habit-name">${escapeHtml(h.name)}<small>🔥 ${streak(h)} day streak · best ${bestStreak(h)}</small></div><div class="habit-week">${days.join('')}</div><button class="x-btn" data-act="habit-del" data-habit="${escapeHtml(h.id)}">✕</button></div>`;
+      }).join('') : '<p class="help-text">No habits yet. Add one below, then tick it off from the board each day.</p>';
+
+      $('statsView').innerHTML = `
+        <div class="stats-head"><button class="mini-btn" data-act="wk-prev">‹</button><span>RIDERSHIP REPORT<small>${formatShortDate(ws)} – ${formatShortDate(we - 1)}</small></span><button class="mini-btn" data-act="wk-next">›</button></div>
+        <div class="stat-cards">
+          <div class="stat-card"><b>${fmtHours(total)}</b><span>Booked</span></div>
+          <div class="stat-card"><b>${occ.length}</b><span>Departures</span></div>
+          <div class="stat-card"><b>${doneTasks}</b><span>To-dos done</span></div>
+        </div>
+        <div class="section-title">Hours by line</div>
+        ${CATS.map(c => `<div class="bar-row"><div class="badge ${c}">${c}</div><div class="bar-wrap"><div class="bar-label">${escapeHtml(S.lines[c])}<span>${fmtHours(per[c])}</span></div><div class="bar-track"><div class="bar-fill" style="width:${(per[c] / max) * 100}%; background: var(--${c})"></div></div></div></div>`).join('')}
+        <p class="help-text">${total ? `Busiest day: ${new Date(addLocalDays(ws, busiest)).toLocaleDateString('en-US', { weekday: 'long' })} (${fmtHours(perDay[busiest])} booked).` : 'No timed events this week.'}</p>
+        <div class="section-title" style="margin-top:8px">Habits</div>
+        ${habitsHtml}
+        <div class="habit-add"><input id="habitInput" placeholder="New habit, e.g. Drink water" maxlength="40"><button class="submit-btn" data-act="habit-add" style="flex:0 0 70px">ADD</button></div>`;
+    }
+    function addHabit() {
+      const v = $('habitInput').value.trim();
+      if (!v) return;
+      S.habits.push({ id: newId(), name: v.slice(0, 40), log: {} });
+      save();
+      renderStats();
+      toast('Habit added. Tick it off from the board.');
+    }
+
+    // ================= Lines tab =================
+    const catOptions = (sel, withAuto = true) => (withAuto ? `<option value="auto"${sel === 'auto' ? ' selected' : ''}>Auto</option>` : '')
+      + CATS.map(c => `<option value="${c}"${sel === c ? ' selected' : ''}>Line ${c}</option>`).join('');
+      function populateCategoryDropdown() {
+      $('evCat').innerHTML = CATS.map(k => `<option value="${k}">Line ${k} – ${escapeHtml(S.lines[k])}</option>`).join('');
+    }
+    function renderLinesView() {
+      $('linesList').innerHTML = CATS.map((k, i) => `
+        <div class="line-edit-row" style="animation-delay:${i * 0.06}s">
+          <div class="badge ${k}">${k}</div>
+          <div class="line-fields">
+            <input type="text" id="lineInput_${k}" value="${escapeHtml(S.lines[k])}" maxlength="30">
+            <input type="text" class="kw" id="kwInput_${k}" value="${escapeHtml(S.settings.keywords[k])}" placeholder="Keywords, comma separated">
+          </div>
+        </div>`).join('');
+      $('fallbackCat').innerHTML = catOptions(S.settings.fallbackCat, false);
+    }
+    function collectLinesForm() {
+      CATS.forEach(k => {
+        S.lines[k] = ($(`lineInput_${k}`).value.trim() || `Line ${k}`).slice(0, 30);
+        S.settings.keywords[k] = $(`kwInput_${k}`).value.trim();
+      });
+      S.settings.fallbackCat = validCat($('fallbackCat').value);
+      save();
+      populateCategoryDropdown();
+    }
+    $('saveLinesBtn').addEventListener('click', () => { collectLinesForm(); toast('Lines saved.'); switchTab('board'); });
+    $('reapplyBtn').addEventListener('click', () => {
+      collectLinesForm();
+      let n = 0;
+      S.events.forEach(ev => {
+        if (ev.source === 'local' || ev.catManual) return;
+        const feedCat = ev.source === 'ical' ? S.settings.feeds.find(f => f.id === ev.feed)?.cat
+          : ev.source === 'gapi' ? S.settings.calendars.find(c => c.id === ev.feed)?.cat : null;
+        const c = catForIncoming(ev.title, ev.loc, feedCat);
+        if (c !== ev.cat) { ev.cat = c; n++; }
+      });
+      save();
+      renderLinesView();
+      toast(`Re-sorted ${n} event${n === 1 ? '' : 's'}.`);
+    });
+
+    // ================= Add / edit modal =================
+    const eventModal = $('addModal');
+    const isReadOnly = ev => ev.source === 'ical' && S.settings.mode === 'ical';
+    const EDITABLE_IDS = ['evTitle', 'evLoc', 'evAllDay', 'evStartDate', 'evEndDate', 'evStartTime', 'evEndTime', 'evNotes', 'evRepeat', 'evUntil'];
+    const setDisabled = on => EDITABLE_IDS.forEach(id => { $(id).disabled = on; });
+    const defaultTodoDate = () => (selectedDateStr < todayStr() ? todayStr() : selectedDateStr);
+    const remindLabel = v => (v < 0 ? 'no alerts' : v === 0 ? 'at start' : `${v} min before`);
+
+    function setKind(kind) {
+      modalKind = kind;
+      eventModal.classList.toggle('kind-todo', kind === 'todo');
+      eventModal.classList.toggle('kind-event', kind === 'event');
+      document.querySelectorAll('#kindSeg button').forEach(b => b.classList.toggle('active', b.dataset.kind === kind));
+      const view = editing?.view;
+      $('saveEventBtn').textContent = kind === 'todo' ? 'SAVE TO-DO'
+        : (S.settings.mode === 'api' && (!view || view.source === 'gapi') ? 'SAVE & SYNC' : 'SAVE');
+    }
+    function toggleTimeFields() {
+      const allDay = $('evAllDay').checked;
+      document.querySelectorAll('.time-field').forEach(el => { el.style.display = allDay ? 'none' : 'block'; });
+    }
+    function toggleUntil() { $('untilWrap').style.display = $('evRepeat').value ? 'block' : 'none'; }
+
+    function openEventModal(view, preset = {}) {
+      editing = view ? { type: 'event', view } : null;
+      catTouched = false;
+      populateCategoryDropdown();
+      setKind('event');
+      $('kindSeg').style.display = view ? 'none' : 'flex';
+      $('quickWrap').style.display = view ? 'none' : 'flex';
+      $('quickInput').value = '';
+      $('quickHint').textContent = '';
+      $('tdDoneRow').style.display = 'none';
+      const master = view ? (view.seriesId ? S.events.find(e => e.id === view.seriesId) : view) : null;
+      const ro = !!view && isReadOnly(view);
+
+      let start, end, allDay = false;
+      if (view) ({ start, end, allDay } = view);
+      else if (preset.start) { start = preset.start; end = preset.end || start + 30 * 60000; }
+      else {
+        start = selectedDateStr === todayStr() ? roundUp5(Date.now()) : new Date(`${selectedDateStr}T09:00`).getTime();
+        end = start + 30 * 60000;
+      }
+
+      $('modalTitle').textContent = view ? (ro ? 'SYNCED DEPARTURE' : 'EDIT DEPARTURE') : 'NEW DEPARTURE';
+      $('evTitle').value = view ? view.title : '';
+      $('evCat').value = view ? view.cat : (activeCat || 'A');
+      $('evLoc').value = view ? view.loc : '';
+      $('evNotes').value = view ? (view.notes || '') : '';
+      $('evAllDay').checked = allDay;
+      $('evStartDate').value = toLocalDateStr(new Date(start));
+      $('evEndDate').value = toLocalDateStr(new Date(allDay ? end - 1 : end));
+      $('evStartTime').value = toTimeInputStr(start);
+      $('evEndTime').value = toTimeInputStr(end);
+      $('evRepeat').value = master?.repeat?.freq || '';
+      $('evUntil').value = master?.repeat?.until || '';
+      $('evRemind').value = view && view.remind !== '' && view.remind != null ? String(view.remind) : '';
+      $('remindDefaultOpt').textContent = `Default (${remindLabel(Number(S.settings.remindDefault))})`;
+      $('evCountdown').checked = !!view?.countdown;
+      $('tdDate').value = defaultTodoDate();
+      $('repeatRow').style.display = view && view.source === 'gapi' ? 'none' : 'flex';
+      setDisabled(ro);
+      toggleTimeFields();
+      toggleUntil();
+
+      let noteText = '';
+      if (ro) noteText = 'From your Google iCal link (read-only). You can change its line, reminder, and countdown here; edit the details in Google Calendar, or switch to API sync for two-way editing.';
+      else if (view?.seriesId && master?.repeat) noteText = `↻ ${REPEAT_LABELS[master.repeat.freq]}. Changes apply to every occurrence.`;
+      else if (view?.source === 'gapi' && S.settings.mode === 'api') noteText = view.gid && view.gid.includes('_')
+        ? 'One occurrence of a repeating Google event. Changes apply to this occurrence only.'
+        : 'Synced with Google Calendar. Changes you save here are sent back to Google.';
+      $('evNote').textContent = noteText;
+      $('evNote').classList.toggle('show', !!noteText);
+
+      const del = $('deleteEventBtn');
+      del.style.display = view ? 'block' : 'none';
+      del.textContent = ro ? 'HIDE' : 'DELETE';
+      const now = Date.now();
+      $('focusBtn').style.display = view ? 'block' : 'none';
+      $('focusBtn').textContent = view && !view.allDay && view.start <= now && view.end > now ? '🎯 Focus until it ends' : '🎯 Focus 25 min';
+      const inGoogle = view && view.gid && S.settings.mode === 'api';
+      $('gcalPushBtn').style.display = ro || inGoogle ? 'none' : 'block';
+      $('gcalPushBtn').textContent = S.settings.mode === 'api' ? '📅 Add to Google' : '📅 Open in Google';
+      eventModal.classList.add('open');
+    }
+
+    function openTodoModal(task, presetDate) {
+      editing = task ? { type: 'todo', id: task.id } : null;
+      catTouched = false;
+      populateCategoryDropdown();
+      setKind('todo');
+      setDisabled(false);
+      $('kindSeg').style.display = task ? 'none' : 'flex';
+      $('quickWrap').style.display = task ? 'none' : 'flex';
+      $('quickInput').value = '';
+      $('quickHint').textContent = '';
+      $('modalTitle').textContent = task ? 'EDIT TO-DO' : 'NEW TO-DO';
+      $('evTitle').value = task ? task.title : '';
+      $('evCat').value = task ? task.cat : (activeCat || S.settings.fallbackCat);
+      $('tdDate').value = task ? task.date : (presetDate && presetDate >= todayStr() ? presetDate : defaultTodoDate());
+      $('tdDone').checked = !!task?.done;
+      $('tdDoneRow').style.display = task ? 'flex' : 'none';
+      $('evNote').classList.remove('show');
+      $('deleteEventBtn').style.display = task ? 'block' : 'none';
+      $('deleteEventBtn').textContent = 'DELETE';
+      eventModal.classList.add('open');
+    }
+
+    function closeEventModal() { eventModal.classList.remove('open'); editing = null; }
+
+    function readForm() {
+      const allDay = $('evAllDay').checked;
+      const sd = $('evStartDate').value || selectedDateStr;
+      let ed = $('evEndDate').value || sd;
+      if (ed < sd) ed = sd;
+      let start, end;
+      if (allDay) { start = dateStrToLocalMs(sd); end = addLocalDays(dateStrToLocalMs(ed), 1); }
+      else {
+        start = new Date(`${sd}T${$('evStartTime').value || '09:00'}`).getTime();
+        end = new Date(`${ed}T${$('evEndTime').value || '09:30'}`).getTime();
+        if (!(end > start)) end = start + 30 * 60000;
+      }
+      const rv = $('evRemind').value;
+      return {
+        title: $('evTitle').value.trim() || 'Untitled Event', cat: validCat($('evCat').value), loc: $('evLoc').value.trim(),
+        notes: $('evNotes').value.trim().slice(0, 2000), start, end, allDay,
+        repeat: $('evRepeat').value, until: $('evRepeat').value ? $('evUntil').value : '',
+        remind: rv === '' ? '' : Number(rv), countdown: $('evCountdown').checked
+      };
+    }
+
+    function applyQuick() {
+      const r = parseQuick($('quickInput').value);
+      if (!r) return;
+      $('evTitle').value = r.title;
+      if (!catTouched) { const c = matchCat(r.title, r.loc); if (c) $('evCat').value = c; }
+      if (r.kind === 'todo') {
+        setKind('todo');
+        $('modalTitle').textContent = 'NEW TO-DO';
+        $('tdDate').value = toLocalDateStr(new Date(r.date));
+        $('quickHint').textContent = `✓ To-do for ${formatShortDate(r.date)}. Check below, then save.`;
+        return;
+      }
+      setKind('event');
+      $('modalTitle').textContent = 'NEW DEPARTURE';
+      $('evLoc').value = r.loc;
+      $('evAllDay').checked = r.allDay;
+      $('evStartDate').value = toLocalDateStr(new Date(r.start));
+      $('evEndDate').value = toLocalDateStr(new Date(r.allDay ? r.end - 1 : r.end));
+      if (!r.allDay) { $('evStartTime').value = toTimeInputStr(r.start); $('evEndTime').value = toTimeInputStr(r.end); }
+      $('evRepeat').value = r.repeat;
+      toggleUntil();
+      toggleTimeFields();
+      const when = r.allDay ? 'all day' : `${formatTime(r.start)}–${formatTime(r.end)}`;
+      const day = new Date(r.start).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      $('quickHint').textContent = `✓ ${day} · ${when}${r.loc ? ' · ' + r.loc : ''}${r.repeat ? ' · ' + REPEAT_LABELS[r.repeat].toLowerCase() : ''}. Check below, then save.`;
+    }
+
+    function openGcalTemplate(ev) {
+      const fmt = ev.allDay
+        ? ms => toLocalDateStr(new Date(ms)).replace(/-/g, '')
+        : ms => new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+      const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(ev.title || 'Subway Event')}&location=${encodeURIComponent(ev.loc || '')}&details=${encodeURIComponent(ev.notes || '')}&dates=${fmt(ev.start)}/${fmt(ev.end)}`;
+      window.open(url, '_blank', 'noopener');
+    }
+
+    async function saveEvent(forcePush) {
+      const f = readForm();
+      const snap = snapshot();
+      const view = editing?.view;
+      const master = view ? S.events.find(e => e.id === (view.seriesId || view.id)) : null;
+      if (view && !master) { closeEventModal(); return; }
+      let ev;
+      if (master && isReadOnly(master)) {
+        ev = { ...master, cat: f.cat, catManual: master.catManual || f.cat !== master.cat, remind: f.remind, countdown: f.countdown };
+      } else if (master) {
+        ev = { ...master, title: f.title, loc: f.loc, notes: f.notes, cat: f.cat, allDay: f.allDay, remind: f.remind, countdown: f.countdown, catManual: master.catManual || f.cat !== master.cat };
+        if (view.seriesId && f.repeat) {
+          // Editing one occurrence of a series: apply the time/day shift to the whole series
+          const base = addLocalDays(startOfLocalDay(master.start), dayDiff(view.start, f.start));
+          if (f.allDay) { ev.start = base; ev.end = addLocalDays(base, Math.max(1, Math.round((f.end - f.start) / DAY))); }
+          else {
+            const fs = new Date(f.start), d = new Date(base);
+            d.setHours(fs.getHours(), fs.getMinutes(), 0, 0);
+            ev.start = d.getTime();
+            ev.end = ev.start + (f.end - f.start);
+          }
+          const shift = Math.round((ev.start - master.start) / 60000);
+          if (ev.exdates && shift) ev.exdates = ev.exdates.map(k => k + shift);
+        } else { ev.start = f.start; ev.end = f.end; }
+        if (master.source !== 'gapi') {
+          if (f.repeat) ev.repeat = { freq: f.repeat, until: f.until || '' };
+          else { delete ev.repeat; delete ev.exdates; }
+        }
+        const changed = ['title', 'loc', 'notes', 'start', 'end', 'allDay'].some(k => master[k] !== ev[k]);
+        if (S.settings.mode === 'api' && ((master.source === 'gapi' && changed) || forcePush)) {
+          ev.dirty = true;
+          if (master.notes !== ev.notes) ev.dirtyNotes = true;
+        }
+      } else {
+        ev = { id: newId(), source: 'local', title: f.title, cat: f.cat, loc: f.loc, notes: f.notes, start: f.start, end: f.end, allDay: f.allDay, remind: f.remind, countdown: f.countdown, catManual: catTouched };
+        if (f.repeat) ev.repeat = { freq: f.repeat, until: f.until || '' };
+        if (S.settings.mode === 'api') ev.dirty = true;
+      }
+      S.events = master ? S.events.map(e => (e.id === master.id ? ev : e)) : [...S.events, ev];
+      closeEventModal();
+      commitWithUndo(snap, master ? 'Departure updated.' : 'Departure added.');
+      if (ev.dirty && gConnected()) scheduleSync();
+      else if (!master && S.settings.mode === 'ical') {
+        const ok = await ask('Add to Google Calendar too?', 'Your iCal links are read-only, so this event only exists on this board. Google can add a copy, which will then sync back here.', [{ label: 'Open Google Calendar', value: true }]);
+        if (ok) openGcalTemplate(ev);
+      }
+    }
+
+    function saveTodo() {
+      const title = $('evTitle').value.trim();
+      if (!title) { toast('Give the to-do a title.'); return; }
+      const snap = snapshot();
+      const data = { title: title.slice(0, 200), cat: validCat($('evCat').value), date: $('tdDate').value || todayStr() };
+      const wasEdit = editing?.type === 'todo';
+      if (wasEdit) {
+        const t = S.tasks.find(x => x.id === editing.id);
+        if (t) {
+          Object.assign(t, data);
+          const done = $('tdDone').checked;
+          if (done !== !!t.done) { t.done = done; t.doneDate = done ? todayStr() : null; }
+        }
+      } else S.tasks.push({ id: newId(), ...data, done: false, doneDate: null });
+      closeEventModal();
+      commitWithUndo(snap, wasEdit ? 'To-do updated.' : 'To-do added.');
+    }
+
+    async function deleteFromModal() {
+      if (modalKind === 'todo') {
+        if (!editing) return;
+        const snap = snapshot();
+        S.tasks = S.tasks.filter(t => t.id !== editing.id);
+        closeEventModal();
+        commitWithUndo(snap, 'To-do deleted.');
+        return;
+      }
+      const view = editing?.view;
+      if (!view) return;
+      const master = S.events.find(e => e.id === (view.seriesId || view.id));
+      if (!master) { closeEventModal(); return; }
+      const snap = snapshot();
+      if (isReadOnly(master)) {
+        S.hidden[master.key] = 1;
+        S.events = S.events.filter(e => e.id !== master.id);
+        closeEventModal();
+        commitWithUndo(snap, 'Hidden from the board.');
+        return;
+      }
+      if (view.seriesId) {
+        const choice = await ask('Delete repeating departure', `"${master.title}" repeats. What should be deleted?`, [{ label: 'Only this one', value: 'one' }, { label: 'Every occurrence', value: 'all', cls: 'danger-btn' }]);
+        if (!choice) return;
+        if (choice === 'one') master.exdates = [...(master.exdates || []), view.occKey];
+        else S.events = S.events.filter(e => e.id !== master.id);
+      } else if (master.source === 'gapi' && master.gid && S.settings.mode === 'api') {
+        const choice = await ask('Delete departure', 'This event is in your Google Calendar.', [{ label: 'Delete everywhere', value: 'all', cls: 'danger-btn' }, { label: 'Hide on this board only', value: 'hide' }]);
+        if (!choice) return;
+        if (choice === 'all') S.pendingDeletes.push({ cal: master.calId || master.feed, gid: master.gid });
+        S.hidden[master.key] = 1;
+        S.events = S.events.filter(e => e.id !== master.id);
+      } else {
+        if (master.key) S.hidden[master.key] = 1;
+        S.events = S.events.filter(e => e.id !== master.id);
+      }
+      closeEventModal();
+      commitWithUndo(snap, 'Departure deleted.');
+      if (S.pendingDeletes.length && gConnected()) scheduleSync();
+    }
+
+    function toggleTask(id) {
+      const t = S.tasks.find(x => x.id === id);
+      if (!t) return;
+      t.done = !t.done;
+      t.doneDate = t.done ? todayStr() : null;
+      save();
+      renderCurrent(false);
+    }
+
+    $('saveEventBtn').addEventListener('click', () => { if (modalKind === 'todo') saveTodo(); else saveEvent(false); });
+    $('deleteEventBtn').addEventListener('click', deleteFromModal);
+    $('gcalPushBtn').addEventListener('click', () => { if (S.settings.mode === 'api') saveEvent(true); else openGcalTemplate(readForm()); });
+    $('closeModal').addEventListener('click', closeEventModal);
+    $('evAllDay').addEventListener('change', toggleTimeFields);
+    $('evRepeat').addEventListener('change', toggleUntil);
+    $('evStartDate').addEventListener('change', () => { if ($('evEndDate').value < $('evStartDate').value) $('evEndDate').value = $('evStartDate').value; });
+    $('evCat').addEventListener('change', () => { catTouched = true; });
+    ['evTitle', 'evLoc'].forEach(id => $(id).addEventListener('input', () => {
+      if (editing || catTouched) return;
+      const c = matchCat($('evTitle').value, $('evLoc').value);
+      if (c) $('evCat').value = c;
+    }));
+    $('quickBtn').addEventListener('click', applyQuick);
+    $('quickInput').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); applyQuick(); } });
+    document.querySelectorAll('#kindSeg button').forEach(b => b.addEventListener('click', () => {
+      setKind(b.dataset.kind);
+      $('modalTitle').textContent = b.dataset.kind === 'todo' ? 'NEW TO-DO' : 'NEW DEPARTURE';
+      setDisabled(false);
+    }));
+    $('focusBtn').addEventListener('click', () => {
+      const v = editing?.view, now = Date.now();
+      const end = v && !v.allDay && v.start <= now && v.end > now ? v.end : now + 25 * 60000;
+      S.focus = { start: now, end, label: v ? v.title : 'Focus', cat: v ? v.cat : 'B' };
+      save();
+      closeEventModal();
+      selectedDateStr = todayStr();
+      switchTab('board');
+      toast(`Focus timer started · ${Math.round((end - now) / 60000)} min`);
+    });
+
+    // ================= Sync, alerts & data modal =================
+    const syncModal = $('syncModal');
+
+    function updateSyncUI() {
+      const mode = $('syncMode').value, s = S.settings, st = $('syncStatus');
+      $('icalSection').style.display = mode === 'ical' ? 'block' : 'none';
+      $('apiSection').style.display = mode === 'api' ? 'block' : 'none';
+      $('fetchGcalBtn').textContent = mode === 'none' ? 'SAVE' : (syncing ? 'SYNCING…' : 'SAVE & SYNC NOW');
+      st.className = 'status-line';
+      let msg = '';
+      if (syncing) msg = 'Syncing…';
+      else if (s.mode !== mode) msg = 'Unsaved change. Tap the button below.';
+      else if (s.lastSyncError && mode !== 'none') { msg = '⚠ ' + s.lastSyncError; st.classList.add('err'); }
+      else if (s.lastSync && mode !== 'none') { msg = `✓ Last synced ${formatTime(s.lastSync)} · ${s.lastSyncMsg}`; st.classList.add('ok'); }
+      if (mode === 'api') msg = (gConnected() ? '🟢 Connected to Google' : '⚪ Not connected') + (msg ? ' · ' + msg : '');
+      st.textContent = msg;
+      $('disconnectBtn').style.display = gConnected() ? 'block' : 'none';
+      $('connectBtn').textContent = gConnected() ? '🔐 Reconnect' : '🔐 Connect Google';
+      updateTopBar();
+    }
+    function renderFeeds() {
+      const feeds = S.settings.feeds;
+      $('feedList').innerHTML = feeds.length ? feeds.map((f, i) => `
+        <div class="feed-row" data-i="${i}">
+          <input type="url" class="feed-url" value="${escapeHtml(f.url)}" placeholder="https://calendar.google.com/calendar/ical/.../basic.ics" autocomplete="off">
+          <select class="feed-cat">${catOptions(f.cat)}</select>
+          <button class="x-btn" data-act="feed-del" title="Remove">✕</button>
+        </div>`).join('') : '<p class="help-text">No calendar links yet.</p>';
+    }
+    function collectFeeds() {
+      document.querySelectorAll('#feedList .feed-row').forEach(row => {
+        const f = S.settings.feeds[+row.dataset.i];
+        if (!f) return;
+        f.url = row.querySelector('.feed-url').value.trim();
+        f.cat = row.querySelector('.feed-cat').value;
+      });
+    }
+    function renderCals() {
+      const s = S.settings, cals = s.calendars;
+      if (!cals.length) {
+        $('calList').innerHTML = `<p class="help-text">${gConnected() ? 'Tap "Refresh calendar list" to load your calendars.' : 'Connect to choose which calendars to show.'}</p>`;
+        $('defaultCalRow').style.display = 'none';
+        return;
+      }
+      $('calList').innerHTML = cals.map((c, i) => {
+        const isDef = c.id === s.defaultCalId;
+        return `<div class="cal-row" data-i="${i}">
+          <label class="check-row" style="margin:0; flex:1; min-width:0;"><input type="checkbox" class="cal-on" ${c.enabled || isDef ? 'checked' : ''} ${isDef ? 'disabled' : ''}><span class="cal-name">${escapeHtml(c.name)}</span></label>
+          <select class="cal-cat">${catOptions(c.cat)}</select>
+        </div>`;
+      }).join('');
+      $('defaultCal').innerHTML = cals.filter(c => c.writable).map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join('');
+      $('defaultCal').value = s.defaultCalId;
+      $('defaultCalRow').style.display = 'block';
+    }
+    function fillSyncForm() {
+      const s = S.settings;
+      $('syncMode').value = s.mode;
+      $('proxyInput').value = s.proxy;
+      $('clientIdInput').value = s.clientId;
+      renderFeeds();
+      renderCals();
+      $('soundToggle').checked = s.sound;
+      const canNotify = 'Notification' in window;
+      $('notifyToggle').disabled = !canNotify;
+      $('notifyToggle').checked = canNotify && s.notify && Notification.permission === 'granted';
+      $('remindDefault').value = String(s.remindDefault);
+      const nHidden = Object.keys(S.hidden).length;
+      $('restoreHiddenBtn').textContent = `Restore hidden events (${nHidden})`;
+      $('restoreHiddenBtn').style.display = nHidden ? 'block' : 'none';
+      updateSyncUI();
+    }
+    async function applySettingsFromForm() {
+      const s = S.settings;
+      collectFeeds();
+      s.proxy = $('proxyInput').value.trim();
+      s.clientId = $('clientIdInput').value.trim();
+      const newMode = $('syncMode').value;
+      if (newMode !== s.mode) {
+        const oldSrc = { ical: 'ical', api: 'gapi' }[s.mode];
+        const n = oldSrc ? S.events.filter(e => e.source === oldSrc).length : 0;
+        if (n) {
+          const ok = await ask('Switching sync method', `Remove the ${n} events synced by your previous method from this board? They stay in Google Calendar.`, [{ label: 'Remove them', value: true }]);
+          if (ok) S.events = S.events.filter(e => e.source !== oldSrc);
+        }
+        s.mode = newMode;
+        s.lastSync = 0; s.lastSyncError = ''; s.lastSyncMsg = '';
+      }
+      save();
+    }
+
+    $('syncModalBtn').addEventListener('click', () => { fillSyncForm(); syncModal.classList.add('open'); });
+    $('closeSyncModal').addEventListener('click', () => { collectFeeds(); save(); syncModal.classList.remove('open'); });
+    $('syncMode').addEventListener('change', () => {
+      updateSyncUI();
+      if ($('syncMode').value === 'api' && location.protocol !== 'file:') loadGis().catch(() => {});
+    });
+    $('addFeedBtn').addEventListener('click', () => {
+      collectFeeds();
+      S.settings.feeds.push({ id: 'f' + newId(), url: '', cat: 'auto' });
+      save();
+      renderFeeds();
+      const inputs = document.querySelectorAll('#feedList .feed-url');
+      if (inputs.length) inputs[inputs.length - 1].focus();
+    });
+    $('feedList').addEventListener('click', e => {
+      const b = e.target.closest('[data-act="feed-del"]');
+      if (!b) return;
+      collectFeeds();
+      S.settings.feeds.splice(+b.closest('.feed-row').dataset.i, 1);
+      save();
+      renderFeeds();
+    });
+    $('calList').addEventListener('change', e => {
+      const row = e.target.closest('.cal-row');
+      const c = row && S.settings.calendars[+row.dataset.i];
+      if (!c) return;
+      if (e.target.classList.contains('cal-on')) c.enabled = e.target.checked;
+      if (e.target.classList.contains('cal-cat')) c.cat = e.target.value;
+      save();
+    });
+    $('defaultCal').addEventListener('change', e => {
+      S.settings.defaultCalId = e.target.value;
+      const c = S.settings.calendars.find(x => x.id === e.target.value);
+      if (c) c.enabled = true;
+      save();
+      renderCals();
+    });
+    $('refreshCalsBtn').addEventListener('click', async () => {
+      if (!gConnected()) { toast('Connect Google first.'); return; }
+      try { await gCalendarList(); renderCals(); toast('Calendar list updated.'); } catch (e) { toast(e.message); }
+    });
+    $('fetchGcalBtn').addEventListener('click', async () => {
+      await applySettingsFromForm();
+      const s = S.settings;
+      if (s.mode === 'none') { syncModal.classList.remove('open'); updateTopBar(); toast('Saved. Sync is off.'); return; }
+      if (s.mode === 'ical' && !s.feeds.some(f => f.url)) { toast('Add at least one iCal link first.'); return; }
+      if (s.mode === 'api' && !s.clientId) { toast('Paste your OAuth Client ID first.'); return; }
+      await runSync(true);
+      fillSyncForm();
+      if (!s.lastSyncError) { syncModal.classList.remove('open'); toast(`Synced · ${s.lastSyncMsg}`); }
+    });
+    $('connectBtn').addEventListener('click', async () => {
+      await applySettingsFromForm();
+      try {
+        await gConnect();
+        try { await gCalendarList(); } catch {}
+        renderCals();
+        toast('Connected to Google.');
+        await runSync(true);
+      } catch (e) { toast(e.message); }
+      updateSyncUI();
+    });
+    $('disconnectBtn').addEventListener('click', () => {
+      if (gToken && window.google?.accounts?.oauth2) google.accounts.oauth2.revoke(gToken, () => {});
+      clearToken();
+      updateSyncUI();
+      renderCals();
+      toast('Disconnected from Google.');
+    });
+    $('restoreHiddenBtn').addEventListener('click', () => {
+      const keep = {};
+      S.pendingDeletes.forEach(p => { keep[`g:${p.cal}|${p.gid}`] = 1; });
+      S.hidden = keep;
+      save();
+      fillSyncForm();
+      toast('Hidden events will reappear on the next sync or import.');
+      if (S.settings.mode !== 'none') runSync(true);
+    });
+    $('soundToggle').addEventListener('change', e => { S.settings.sound = e.target.checked; save(); if (S.settings.sound) playChime(); });
+    $('notifyToggle').addEventListener('change', async e => {
+      if (e.target.checked) {
+        if (!('Notification' in window)) { e.target.checked = false; toast("This browser doesn't support notifications here."); return; }
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') { e.target.checked = false; toast('Notifications are blocked in your browser settings.'); }
+      }
+      S.settings.notify = e.target.checked;
+      save();
+    });
+    $('remindDefault').addEventListener('change', e => { S.settings.remindDefault = Number(e.target.value); save(); });
+    $('topLeft').addEventListener('click', async () => {
+      if (S.settings.mode === 'api' && !gConnected()) {
+        try { await gConnect(); await runSync(true); toast('Reconnected to Google.'); } catch (err) { toast(err.message); }
+      } else if (S.settings.mode !== 'none' && S.settings.lastSyncError) {
+        fillSyncForm();
+        syncModal.classList.add('open');
+      }
+    });
+
+    // ================= Files, backup, reset =================
+    function download(name, text, type) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([text], { type }));
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    }
+    $('importBtn').addEventListener('click', () => $('icsFile').click());
+    $('icsFile').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const r = mergeIncoming(parseIcs(ev.target.result).map(it => ({ ...it, key: 'file:' + it.key })), 'file', 'file', 'auto', false);
+        e.target.value = '';
+        syncModal.classList.remove('open');
+        renderCurrent(false);
+        toast(`Imported: ${r.added} new, ${r.updated} updated.`);
+      };
+      reader.readAsText(file);
+    });
+    $('exportBtn').addEventListener('click', () => {
+      const esc = s => String(s || '').replace(/\\/g, '\\\\').replace(/\r?\n/g, '\\n').replace(/([,;])/g, '\\$1');
+      const utc = ms => new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+      const dateOnly = ms => toLocalDateStr(new Date(ms)).replace(/-/g, '');
+      const fold = line => { const parts = []; while (line.length > 73) { parts.push(line.slice(0, 73)); line = ' ' + line.slice(73); } parts.push(line); return parts.join('\r\n'); };
+      const stamp = utc(Date.now());
+      const out = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//SubwayBoard//EN', 'CALSCALE:GREGORIAN'];
+      S.events.forEach(ev => {
+        out.push('BEGIN:VEVENT', `UID:${String(ev.key || ev.id).replace(/[\r\n]/g, '')}@subwayboard`, `DTSTAMP:${stamp}`);
+        if (ev.allDay) out.push(`DTSTART;VALUE=DATE:${dateOnly(ev.start)}`, `DTEND;VALUE=DATE:${dateOnly(ev.end)}`);
+        else out.push(`DTSTART:${utc(ev.start)}`, `DTEND:${utc(ev.end)}`);
+        if (ev.repeat) {
+          out.push('RRULE:' + ruleFor(ev, true));
+          if (ev.exdates?.length) out.push(ev.allDay
+            ? `EXDATE;VALUE=DATE:${ev.exdates.map(k => dateOnly(k * 60000)).join(',')}`
+            : `EXDATE:${ev.exdates.map(k => utc(k * 60000)).join(',')}`);
+        }
+        out.push(`SUMMARY:${esc(ev.title)}`);
+        if (ev.loc) out.push(`LOCATION:${esc(ev.loc)}`);
+        if (ev.notes) out.push(`DESCRIPTION:${esc(ev.notes)}`);
+        out.push(`CATEGORIES:${esc(S.lines[ev.cat])}`, 'END:VEVENT');
+      });
+      out.push('END:VCALENDAR');
+      download('subway-board.ics', out.map(fold).join('\r\n') + '\r\n', 'text/calendar');
+    });
+    $('backupBtn').addEventListener('click', () => {
+      download(`subway-board-backup-${todayStr()}.json`, JSON.stringify({ app: 'subway-board', version: 2, exportedAt: new Date().toISOString(), state: S }, null, 2), 'application/json');
+      toast('Backup downloaded.');
+    });
+    $('restoreBtn').addEventListener('click', () => $('restoreFile').click());
+    $('restoreFile').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async ev => {
+        e.target.value = '';
+        let data;
+        try { data = JSON.parse(ev.target.result); } catch { toast("That file isn't a Subway Board backup."); return; }
+        const st = data && (data.state || data);
+        if (!st || !Array.isArray(st.events)) { toast("That file isn't a Subway Board backup."); return; }
+        const when = data.exportedAt ? new Date(data.exportedAt).toLocaleString() : 'the file';
+        const ok = await ask('Restore backup?', `This replaces everything on this device with the backup from ${when}.`, [{ label: 'Replace with backup', value: true, cls: 'danger-btn' }]);
+        if (!ok) return;
+        S = upgrade(st);
+        save();
+        alerted.clear();
+        syncModal.classList.remove('open');
+        populateCategoryDropdown();
+        renderAll();
+        toast('Backup restored.');
+      };
+      reader.readAsText(file);
+    });
+    $('resetBtn').addEventListener('click', async () => {
+      const ok = await ask('Replace events?', 'All events on this device will be replaced with sample data. To-dos, habits, and settings stay. Synced events come back on the next sync.', [{ label: 'Replace events', value: true, cls: 'danger-btn' }]);
+      if (!ok) return;
+      const snap = snapshot();
+      S.events = getSampleEvents();
+      const keep = {};
+      S.pendingDeletes.forEach(p => { keep[`g:${p.cal}|${p.gid}`] = 1; });
+      S.hidden = keep;
+      alerted.clear();
+      selectedDateStr = todayStr();
+      syncModal.classList.remove('open');
+      commitWithUndo(snap, 'Sample events loaded.');
+      if (S.settings.mode !== 'none') scheduleSync();
+    });
+
+    // ================= Navigation =================
+    function switchTab(tab) {
+      currentTab = tab;
+      const map = { board: 'tabBoard', week: 'tabWeek', stats: 'tabStats', lines: 'tabLines' };
+      Object.entries(map).forEach(([k, id]) => $(id).classList.toggle('active', k === tab));
+      const boardLike = tab === 'board' || tab === 'week';
+      if (!boardLike && searchMode) { searchMode = false; $('searchBar').style.display = 'none'; }
+      $('board').style.display = boardLike ? 'block' : 'none';
+      $('colHeaders').style.display = boardLike ? 'flex' : 'none';
+      $('filters').style.display = boardLike && !searchMode ? 'flex' : 'none';
+      $('linesView').style.display = tab === 'lines' ? 'block' : 'none';
+      $('statsView').style.display = tab === 'stats' ? 'block' : 'none';
+      if (tab === 'lines') renderLinesView();
+      if (tab === 'stats') { statsWeek = weekStartOf(dateStrToLocalMs(selectedDateStr)); renderStats(); }
+      renderCurrent(true);
+    }
+    function shiftDate(n) {
+      const step = currentTab === 'week' ? 7 : 1;
+      selectedDateStr = toLocalDateStr(new Date(addLocalDays(dateStrToLocalMs(selectedDateStr), n * step)));
+      renderCurrent(true);
+    }
+    function openSearch() {
+      if (currentTab !== 'board' && currentTab !== 'week') switchTab('board');
+      searchMode = true;
+      $('searchBar').style.display = 'flex';
+      $('filters').style.display = 'none';
+      $('searchInput').value = '';
+      renderCurrent(true);
+      setTimeout(() => $('searchInput').focus(), 50);
+    }
+    function closeSearch() {
+      searchMode = false;
+      $('searchBar').style.display = 'none';
+      $('filters').style.display = currentTab === 'board' || currentTab === 'week' ? 'flex' : 'none';
+      renderCurrent(true);
+    }
+    function closeAllModals() {
+      document.querySelectorAll('.modal.open').forEach(m => m.classList.remove('open'));
+      if (askResolve) { const r = askResolve; askResolve = null; r(null); }
+      editing = null;
+    }
+    function rolloverCheck() {
+      const t = todayStr();
+      if (t === lastToday) return;
+      if (selectedDateStr === lastToday) selectedDateStr = t;
+      lastToday = t;
+      renderCurrent(true);
+    }
+
+    $('tabBoard').addEventListener('click', () => switchTab('board'));
+    $('tabWeek').addEventListener('click', () => switchTab('week'));
+    $('tabStats').addEventListener('click', () => switchTab('stats'));
+    $('tabLines').addEventListener('click', () => switchTab('lines'));
+    $('tabAdd').addEventListener('click', () => openEventModal(null));
+    $('todayBtn').addEventListener('click', () => {
+      selectedDateStr = todayStr();
+      if (currentTab === 'stats') { statsWeek = null; renderStats(); }
+      renderCurrent(true);
+    });
+    $('dateWrap').addEventListener('click', openMonth);
+    $('searchBtn').addEventListener('click', () => (searchMode ? closeSearch() : openSearch()));
+    $('searchClose').addEventListener('click', closeSearch);
+    $('searchInput').addEventListener('input', () => renderSearch());
+
+    document.querySelectorAll('.filter-btn').forEach(btn => btn.addEventListener('click', () => {
+      activeCat = activeCat === btn.dataset.cat ? null : btn.dataset.cat;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === activeCat));
+      renderCurrent(true);
+    }));
+    $('allDayBtn').addEventListener('click', () => {
+      showAllDayOnly = !showAllDayOnly;
+      $('allDayBtn').classList.toggle('active', showAllDayOnly);
+      renderCurrent(true);
+    });
+
+    $('board').addEventListener('click', e => {
+      if (suppressClick) return;
+      const act = e.target.closest('[data-act]');
+      if (act?.dataset.act === 'add-todo') { openTodoModal(null, selectedDateStr); return; }
+      if (act?.dataset.act === 'toggle-todo') { toggleTask(act.closest('.todo-row').dataset.task); return; }
+      const tr = e.target.closest('.todo-row');
+      if (tr) { const t = S.tasks.find(x => x.id === tr.dataset.task); if (t) openTodoModal(t); return; }
+      const dh = e.target.closest('.day-head');
+      if (dh && dh.dataset.date) { selectedDateStr = dh.dataset.date; switchTab('board'); }
+    });
+    $('countdownStrip').addEventListener('click', e => {
+      const c = e.target.closest('[data-date]');
+      if (!c) return;
+      selectedDateStr = c.dataset.date;
+      switchTab('board');
+    });
+    $('habitStrip').addEventListener('click', e => {
+      const c = e.target.closest('[data-habit]');
+      const h = c && S.habits.find(x => x.id === c.dataset.habit);
+      if (!h) return;
+      if (h.log[selectedDateStr]) delete h.log[selectedDateStr]; else h.log[selectedDateStr] = 1;
+      save();
+      renderCurrent(false);
+    });
+    $('brief').addEventListener('click', () => { if (briefGap) openEventModal(null, briefGap); });
+
+    $('monthGrid').addEventListener('click', e => {
+      const c = e.target.closest('[data-date]');
+      if (!c) return;
+      selectedDateStr = c.dataset.date;
+      $('monthModal').classList.remove('open');
+      if (currentTab !== 'board' && currentTab !== 'week') switchTab('board'); else renderCurrent(true);
+    });
+    $('monthPrev').addEventListener('click', () => { const m = new Date(monthCursor); monthCursor = new Date(m.getFullYear(), m.getMonth() - 1, 1).getTime(); renderMonth(); });
+    $('monthNext').addEventListener('click', () => { const m = new Date(monthCursor); monthCursor = new Date(m.getFullYear(), m.getMonth() + 1, 1).getTime(); renderMonth(); });
+    $('monthToday').addEventListener('click', () => {
+      selectedDateStr = todayStr();
+      $('monthModal').classList.remove('open');
+      renderCurrent(true);
+    });
+    $('closeMonth').addEventListener('click', () => $('monthModal').classList.remove('open'));
+
+    $('statsView').addEventListener('click', e => {
+      const a = e.target.closest('[data-act]');
+      if (!a) return;
+      const act = a.dataset.act;
+      if (act === 'wk-prev' || act === 'wk-next') { statsWeek = addLocalDays(statsWeek, act === 'wk-prev' ? -7 : 7); renderStats(); }
+      else if (act === 'habit-add') addHabit();
+      else if (act === 'habit-toggle') {
+        const h = S.habits.find(x => x.id === a.dataset.habit);
+        if (!h) return;
+        if (h.log[a.dataset.date]) delete h.log[a.dataset.date]; else h.log[a.dataset.date] = 1;
+        save();
+        renderStats();
+      } else if (act === 'habit-del') {
+        const h = S.habits.find(x => x.id === a.dataset.habit);
+        if (!h) return;
+        const snap = snapshot();
+        S.habits = S.habits.filter(x => x !== h);
+        commitWithUndo(snap, `Habit "${h.name}" removed.`);
+      }
+    });
+    $('statsView').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'habitInput') addHabit(); });
+
+    // Swipe left/right on the board to change day (or week)
+    let swipe = null;
+    $('board').addEventListener('pointerdown', e => { swipe = { x: e.clientX, y: e.clientY }; });
+    $('board').addEventListener('pointercancel', () => { swipe = null; });
+    $('board').addEventListener('pointerup', e => {
+      if (!swipe || searchMode) { swipe = null; return; }
+      const dx = e.clientX - swipe.x, dy = e.clientY - swipe.y;
+      swipe = null;
+      if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        suppressClick = true;
+        setTimeout(() => { suppressClick = false; }, 80);
+        shiftDate(dx < 0 ? 1 : -1);
+      }
+    });
+
+    // Keyboard: ← → change day, T today, / search, N new, Esc close
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        if (document.querySelector('.modal.open')) { closeAllModals(); return; }
+        if (searchMode) { closeSearch(); return; }
+      }
+      if (e.target.matches('input, textarea, select') || document.querySelector('.modal.open')) return;
+      if (e.key === 'ArrowLeft') shiftDate(-1);
+      else if (e.key === 'ArrowRight') shiftDate(1);
+      else if (e.key === 't') { selectedDateStr = todayStr(); renderCurrent(true); }
+      else if (e.key === '/') { e.preventDefault(); openSearch(); }
+      else if (e.key === 'n') openEventModal(null);
+    });
+
+    // ================= Start =================
+    populateCategoryDropdown();
+    switchTab('board');
+    if (S.settings.mode === 'api' && S.settings.clientId && location.protocol !== 'file:') loadGis().catch(() => {});
+    if (v1Data) setTimeout(() => toast('Imported your events and settings from version 1.'), 600);
+    runSync();
+    checkAlerts();
+    setInterval(() => {
+      rolloverCheck();
+      if (currentTab === 'board' || currentTab === 'week') renderCurrent(false); else updateTopBar();
+      checkAlerts();
+    }, 10000);
+    setInterval(() => runSync(), 600000);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'visible') return;
+      rolloverCheck();
+      renderCurrent(false);
+      checkAlerts();
+      if (Date.now() - S.settings.lastSync > 120000) runSync();
+    });
+    window.addEventListener('online', () => runSync());
+  </script>
+</body>
+</html>
