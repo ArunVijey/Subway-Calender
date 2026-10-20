@@ -833,7 +833,7 @@ function renderBoard(animate) {
     b.innerHTML = `<div class="empty">${showAllDay ? 'NO ALL-DAY EVENTS' : isToday ? 'NO MORE DEPARTURES TODAY' : 'NO SCHEDULED DEPARTURES'}</div>`;
     return;
   }
-  let firstLive = true;
+  const nextIdx = isToday && !showAllDay ? boardList.findIndex(e => e.start > now) : -1;   let firstLive = true;
   b.innerHTML = boardList.map((ev, i) => {
     const live = isToday && !ev.allDay && now >= ev.start && now <= ev.end;
     const primary = live && firstLive;
@@ -846,7 +846,7 @@ function renderBoard(animate) {
     const pct = live ? Math.min(100, (now - ev.start) / Math.max(1, ev.end - ev.start) * 100) : 0;
     const link = meetLink(ev);
     const when = ev.allDay ? 'All day' : ev.start < d0 ? `Since ${fmtD(ev.start, { month: 'short', day: 'numeric' })}` : fmtT(ev.start);
-    return `<div class="row${primary ? ' live' : ''}" data-i="${i}" style="animation-delay:${animate ? Math.min(i, 10) * 0.05 : 0}s">
+    return `<div class="row${primary ? ' live' : i === nextIdx ? ' next' : ''}" data-i="${i}" style="animation-delay:${animate ? Math.min(i, 10) * 0.05 : 0}s">
       ${badge(ev.cat)}
       <div class="info">${live ? '<span class="tag">LIVE</span>' : ''}<div class="t">${esc(ev.title)}</div>${ev.loc ? `<div class="s">${esc(ev.loc)}</div>` : ''}<div class="w">${ev.seriesId ? '↻ ' : ''}${when}${link ? ` <a class="join" href="${esc(link)}" target="_blank" rel="noopener">JOIN</a>` : ''}</div></div>
       <div class="tm"><div class="n">${n}</div><div class="u">${u}</div></div>
