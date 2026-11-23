@@ -15,3 +15,8 @@ VoidCallback? tapped(VoidCallback? fn) => fn == null
         buzz();
         fn();
       };
+
+/// Selection tick, for segmented controls and paging (UISelectionFeedbackGenerator).
+void tick() {
+  if (hapticsOn) HapticFeedback.selectionClick();
+}

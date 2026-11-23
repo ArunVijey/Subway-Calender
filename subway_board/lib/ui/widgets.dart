@@ -1,34 +1,13 @@
 // Small shared widgets: icons, line badges, switch, sheets, pickers.
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../core/model.dart';
 import '../core/util.dart';
 import 'haptics.dart';
+import 'motion.dart';
 import 'theme.dart';
 
-const _icons = {
-  'gear':
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
-  'grid':
-      '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>',
-  'lines':
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="6" cy="5" r="2.2"/><circle cx="18" cy="5" r="2.2"/><circle cx="12" cy="19" r="2.2"/><path d="M6 7.2c0 5 6 4 6 9.6M18 7.2c0 5-6 4-6 9.6"/></svg>',
-  'plus': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
-  'reset':
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>',
-  'chev': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
-};
-
-class SvgIcon extends StatelessWidget {
-  final String name;
-  final double size;
-  final Color color;
-  const SvgIcon(this.name, {super.key, this.size = 22, this.color = Colors.white});
-  @override
-  Widget build(BuildContext context) =>
-      SvgPicture.string(_icons[name]!, width: size, height: size, theme: SvgTheme(currentColor: color));
-}
+export 'icons.dart' show SvgIcon;
 
 /// Colored circle with the line letter.
 class LineBadge extends StatelessWidget {
@@ -68,13 +47,15 @@ class PillSwitch extends StatelessWidget {
         child: Opacity(
           opacity: onChanged == null ? .5 : 1,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
             width: 50,
             height: 30,
             padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(color: value ? kYellow : const Color(0xFF3F3F46), borderRadius: BorderRadius.circular(15)),
             child: AnimatedAlign(
-              duration: const Duration(milliseconds: 200),
+              duration: Motion.bouncyDur,
+              curve: Motion.bouncy,
               alignment: value ? Alignment.centerRight : Alignment.centerLeft,
               child: Container(
                 width: 24,
@@ -103,8 +84,9 @@ class CircleBtn extends StatelessWidget {
   Widget build(BuildContext context) => Semantics(
         button: true,
         label: label,
-        child: GestureDetector(
-          onTap: tapped(onTap),
+        child: Pressable(
+          scale: .9,
+          onTap: onTap,
           child: Container(
             width: 46,
             height: 46,
@@ -128,6 +110,11 @@ Future<T?> showSheet<T>(BuildContext context, WidgetBuilder builder) {
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     barrierColor: const Color(0xB3000000),
+    sheetAnimationStyle: AnimationStyle(
+      duration: Motion.smoothDur,
+      reverseDuration: const Duration(milliseconds: 280),
+      curve: Motion.smooth,
+    ),
     builder: (ctx) => PalScope(
       pal: pal,
       child: Padding(
@@ -156,8 +143,9 @@ class SheetHead extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 14),
       child: Row(children: [
         Expanded(child: Text(title.toUpperCase(), style: cond(28, FontWeight.w800, color: pal.ink))),
-        GestureDetector(
-          onTap: tapped(() => Navigator.pop(context)),
+        Pressable(
+          scale: .85,
+          onTap: () => Navigator.pop(context),
           child: Container(
             width: 32,
             height: 32,
@@ -189,16 +177,16 @@ class SheetBtn extends StatelessWidget {
     };
     return Padding(
       padding: const EdgeInsets.only(top: 10),
-      child: Material(
-        color: bg,
-        borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: tapped(onTap),
+      child: Pressable(
+        scale: .97,
+        onTap: onTap,
+        child: Opacity(
+          opacity: onTap == null ? .5 : 1,
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.all(14),
             alignment: Alignment.center,
+            decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
             child: Text(label.toUpperCase(), style: cond(16, FontWeight.w800, ls: .06, color: fg)),
           ),
         ),

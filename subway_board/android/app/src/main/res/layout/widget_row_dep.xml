@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One departure, like BoardRow: badge, title / place / time, countdown. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/row_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <ImageView
+        android:id="@+id/row_bg"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitXY"
+        android:src="@drawable/w_rect" />
+
+    <!-- Live row breathing: brighter yellow fading in and out over the yellow base -->
+    <ViewFlipper
+        android:id="@+id/row_glow"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:autoStart="true"
+        android:flipInterval="1500"
+        android:inAnimation="@anim/w_breathe_in"
+        android:outAnimation="@anim/w_breathe_out"
+        android:visibility="gone">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitXY"
+            android:src="@drawable/w_rect_yellow_hi" />
+    </ViewFlipper>
+
+    <LinearLayout
+        android:id="@+id/row_inner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingTop="14dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="14dp"
+        android:clipChildren="false"
+        android:clipToPadding="false">
+
+        <!-- Made with a task: its tick (the bitmap has a bigger tap margin built in) -->
+        <ImageView
+            android:id="@+id/row_tick"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="2dp"
+            android:visibility="gone" />
+
+        <FrameLayout
+            android:layout_width="38dp"
+            android:layout_height="38dp">
+
+            <ImageView
+                android:id="@+id/row_badge"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="fitXY"
+                android:src="@drawable/w_circle" />
+
+            <ImageView
+                android:id="@+id/row_ring"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="fitXY"
+                android:src="@drawable/w_ring"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/row_letter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:layout_weight="1"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:orientation="vertical">
+
+            <FrameLayout
+                android:id="@+id/row_live_box"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="-5dp"
+                android:layout_marginTop="-5dp"
+                android:layout_marginBottom="0dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/row_live"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+                <!-- LIVE tag pulse: a halo that blooms and fades around the tag -->
+                <ViewFlipper
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:autoStart="true"
+                    android:flipInterval="800"
+                    android:inAnimation="@anim/w_pulse_in"
+                    android:outAnimation="@anim/w_pulse_out">
+
+                    <FrameLayout
+                        android:layout_width="1dp"
+                        android:layout_height="1dp" />
+
+                    <ImageView
+                        android:id="@+id/row_live_halo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </ViewFlipper>
+            </FrameLayout>
+
+            <ImageView
+                android:id="@+id/row_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <ImageView
+                android:id="@+id/row_loc"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp" />
+
+            <ImageView
+                android:id="@+id/row_when"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:gravity="end"
+            android:orientation="vertical">
+
+            <ImageView
+                android:id="@+id/row_num"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <ImageView
+                android:id="@+id/row_unit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/row_pb_yellow_row"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:layout_gravity="bottom"
+        android:max="1000"
+        android:maxHeight="4dp"
+        android:minHeight="4dp"
+        android:progressDrawable="@drawable/w_pb_on_yellow"
+        android:visibility="gone" />
+
+    <ProgressBar
+        android:id="@+id/row_pb_dark"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:layout_gravity="bottom"
+        android:max="1000"
+        android:maxHeight="4dp"
+        android:minHeight="4dp"
+        android:progressDrawable="@drawable/w_pb_dark"
+        android:visibility="gone" />
+
+    <ProgressBar
+        android:id="@+id/row_pb_light"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:layout_gravity="bottom"
+        android:max="1000"
+        android:maxHeight="4dp"
+        android:minHeight="4dp"
+        android:progressDrawable="@drawable/w_pb_light"
+        android:visibility="gone" />
+
+    <ImageView
+        android:id="@+id/row_rule"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_gravity="bottom"
+        android:scaleType="fitXY"
+        android:src="@drawable/w_rect" />
+</FrameLayout>

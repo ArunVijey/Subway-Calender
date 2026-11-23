@@ -11,8 +11,43 @@ import 'haptics.dart';
 import 'theme.dart';
 import 'widgets.dart';
 
+/// Opens Lines as a page (from Settings).
+void openLinesPage(BuildContext context) {
+  final app = context.read<AppState>();
+  final pal = Pal.of(context);
+  Navigator.of(context).push(PageRouteBuilder<void>(
+    transitionDuration: const Duration(milliseconds: 520),
+    reverseTransitionDuration: const Duration(milliseconds: 300),
+    pageBuilder: (_, _, _) => ChangeNotifierProvider.value(
+      value: app,
+      child: PalScope(
+        pal: pal,
+        child: Builder(builder: (context) {
+          final pad = MediaQuery.paddingOf(context);
+          return Scaffold(
+            backgroundColor: kBlack,
+            body: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: Padding(padding: EdgeInsets.fromLTRB(18, 10 + pad.top, 18, pad.bottom), child: const LinesView(asPage: true)),
+              ),
+            ),
+          );
+        }),
+      ),
+    ),
+    transitionsBuilder: (_, anim, _, child) => SlideTransition(
+      position: Tween(begin: const Offset(1, 0), end: Offset.zero).animate(CurvedAnimation(parent: anim, curve: kEase, reverseCurve: Curves.easeInCubic)),
+      child: child,
+    ),
+  ));
+}
+
 class LinesView extends StatelessWidget {
-  const LinesView({super.key});
+  /// Shown as a page from Settings: a close button instead of the gear, and
+  /// picking a line closes it and shows that line on the board.
+  final bool asPage;
+  const LinesView({super.key, this.asPage = false});
 
   @override
   Widget build(BuildContext context) {
@@ -23,54 +58,123 @@ class LinesView extends StatelessWidget {
       PageHead(
         title: 'Lines',
         sub: '${weekdayShort(d0)}, ${monthDay(d0)}'.toUpperCase(),
-        trailing: const GearButton(),
+        trailing: asPage
+            ? CircleBtn(label: 'Close', onTap: () => Navigator.pop(context), child: const Text('✕', style: TextStyle(fontSize: 16, color: Colors.white)))
+            : const GearButton(),
       ),
       Expanded(
-        child: ListView(padding: const EdgeInsets.only(bottom: 24), children: [
-          for (final l in app.s.lines)
-            InkWell(
-              onTap: tapped(() => app.showLine(l.id)),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 2),
-                decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFF26262B)))),
-                child: Row(children: [
-                  LineBadge(l),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Text(l.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: cond(26, FontWeight.w700, color: Colors.white)),
+        // Long-press a row (or drag its handle) to reorder; the top line is the default.
+        child: ReorderableListView.builder(
+          padding: const EdgeInsets.only(bottom: 24),
+          buildDefaultDragHandles: false,
+          itemCount: app.s.lines.length,
+          onReorderStart: (_) => buzz(),
+          onReorderItem: app.moveLine,
+          proxyDecorator: (child, _, anim) => AnimatedBuilder(
+            animation: anim,
+            builder: (_, child) {
+              final t = Curves.easeOutCubic.transform(anim.value);
+              return Transform.scale(
+                scale: 1 + .03 * t,
+                child: Material(
+                  color: Color.lerp(kBlack, const Color(0xFF18181C), t),
+                  elevation: 0,
+                  borderRadius: BorderRadius.circular(12),
+                  shadowColor: Colors.transparent,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .6 * t), blurRadius: 24, offset: const Offset(0, 8))],
+                    ),
+                    child: child,
                   ),
-                  const SizedBox(width: 14),
-                  Text('${occ.where((e) => e.cat == l.id).length} ${isToday ? 'today' : 'that day'}',
-                      style: inter(13, FontWeight.w600, color: kDim)),
-                  const SizedBox(width: 6),
-                  Semantics(
-                    button: true,
-                    label: 'Edit line ${l.name}',
-                    child: GestureDetector(
-                      onTap: tapped(() => openLineSheet(context, l.id)),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-                        child: Text('•••', style: inter(18, FontWeight.w500, ls: .05, color: kDim)),
+                ),
+              );
+            },
+            child: child,
+          ),
+          itemBuilder: (context, i) {
+            final l = app.s.lines[i];
+            return ReorderableDelayedDragStartListener(
+              key: ValueKey(l.id),
+              index: i,
+              child: InkWell(
+                onTap: tapped(() {
+                  if (asPage) Navigator.of(context).popUntil((r) => r.isFirst);
+                  app.showLine(l.id);
+                }),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 2),
+                  decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFF26262B)))),
+                  child: Row(children: [
+                    ReorderableDragStartListener(
+                      index: i,
+                      child: Semantics(
+                        label: 'Drag to reorder ${l.name}',
+                        child: const Padding(
+                          padding: EdgeInsets.fromLTRB(0, 8, 10, 8),
+                          child: Icon(Icons.drag_indicator, size: 22, color: Color(0xFF52525B)),
+                        ),
                       ),
                     ),
-                  ),
-                ]),
-              ),
-            ),
-          if (app.s.lines.length < kLetters.length)
-            Padding(
-              padding: const EdgeInsets.only(top: 18),
-              child: OutlinedButton(
-                onPressed: tapped(() => openLineSheet(context, null)),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.all(16),
-                  side: const BorderSide(color: Colors.white, width: 1.5),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    LineBadge(l),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Row(children: [
+                        Flexible(
+                          child: Text(l.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: cond(26, FontWeight.w700, color: Colors.white)),
+                        ),
+                        if (i == 0) ...[
+                          const SizedBox(width: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 7),
+                            decoration: BoxDecoration(color: kYellow, borderRadius: BorderRadius.circular(3)),
+                            child: Text('DEFAULT', style: cond(12, FontWeight.w800, ls: .1, color: Colors.black)),
+                          ),
+                        ],
+                      ]),
+                    ),
+                    const SizedBox(width: 14),
+                    Text('${occ.where((e) => e.cat == l.id).length} ${isToday ? 'today' : 'that day'}',
+                        style: inter(13, FontWeight.w600, color: kDim)),
+                    const SizedBox(width: 6),
+                    Semantics(
+                      button: true,
+                      label: 'Edit line ${l.name}',
+                      child: GestureDetector(
+                        onTap: tapped(() => openLineSheet(context, l.id)),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                          child: Text('•••', style: inter(18, FontWeight.w500, ls: .05, color: kDim)),
+                        ),
+                      ),
+                    ),
+                  ]),
                 ),
-                child: Text('ADD LINE', style: cond(14, FontWeight.w800, ls: .08, color: Colors.white)),
               ),
+            );
+          },
+          footer: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Text('Hold and drag to reorder. The top line is the default for new events.',
+                  style: inter(12, FontWeight.w500, height: 1.45, color: const Color(0xFF71717A))),
             ),
-        ]),
+            if (app.s.lines.length < kLetters.length)
+              Padding(
+                padding: const EdgeInsets.only(top: 18),
+                child: OutlinedButton(
+                  onPressed: tapped(() => openLineSheet(context, null)),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.all(16),
+                    side: const BorderSide(color: Colors.white, width: 1.5),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text('ADD LINE', style: cond(14, FontWeight.w800, ls: .08, color: Colors.white)),
+                ),
+              ),
+          ]),
+        ),
       ),
     ]);
   }

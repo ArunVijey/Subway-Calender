@@ -49,7 +49,10 @@ class _EventFormState extends State<EventForm> {
     super.initState();
     int start, end;
     allDay = false;
-    final v = view;
+    // Quick add's "More options" hands over what it already read from the text.
+    final d0 = view == null ? app.draft : null;
+    app.draft = null;
+    final v = view ?? d0;
     if (v != null) {
       start = v.start;
       end = v.end;
@@ -70,9 +73,10 @@ class _EventFormState extends State<EventForm> {
     _name.text = v?.title ?? '';
     _loc.text = v?.loc ?? '';
     _notes.text = v?.notes ?? '';
-    final m = master;
+    final m = master ?? d0;
     repeat = m?.repeat?.freq ?? '';
     until = m?.repeat?.until ?? '';
+    if (d0 != null) lineTouched = d0.catManual;
     remind = v?.remind;
     locOpen = v != null && (v.loc.isNotEmpty || v.notes.isNotEmpty);
     moreOpen = (m?.repeat != null) || remind != null;
@@ -134,23 +138,62 @@ class _EventFormState extends State<EventForm> {
   Future<void> _delete() async {
     final v = view, m = master;
     if (v == null || m == null) return;
+    String? c;
     if (!ro && v.seriesId != null) {
-      final c = await ask<String>(context, 'Delete repeating event', '"${m.title}" repeats.', const [
+      c = await ask<String>(context, 'Delete repeating event', '"${m.title}" repeats.', const [
         AskBtn('Only this one', 'one'),
         AskBtn('Every occurrence', 'all', BtnKind.red),
       ]);
       if (c == null) return;
-      app.deleteEvent(choice: c);
     } else if (app.isGoogleEvent(m)) {
-      final c = await ask<String>(context, 'Delete event', "It's also in your Google Calendar.", const [
+      c = await ask<String>(context, 'Delete event', "It's also in your Google Calendar.", const [
         AskBtn('Delete everywhere', 'all', BtnKind.red),
         AskBtn('Hide on this board', 'hide'),
       ]);
       if (c == null) return;
-      app.deleteEvent(choice: c);
-    } else {
-      app.deleteEvent();
     }
+    // Made with a task: that goes too, or stays on its own.
+    final t = c == 'one' ? null : app.taskOfEvent(m);
+    var withTask = false;
+    if (t != null) {
+      if (!mounted) return;
+      final w = await ask<String>(context, 'Delete event', '"${t.title}" is also a task${t.isBill ? ' with a ${app.cash(t.amount)} bill' : ''}.', const [
+        AskBtn('Delete event and task', 'both', BtnKind.red),
+        AskBtn('Delete event, keep task', 'event'),
+      ]);
+      if (w == null) return;
+      withTask = w == 'both';
+    }
+    app.deleteEvent(choice: c, withTask: withTask);
+  }
+
+  /// Made with a task (or will be, from quick add's "Also"): says so, and what
+  /// a tick does.
+  Widget? _linkNote(Pal pal) {
+    final t = master != null ? app.taskOfEvent(master!) : (view == null ? app.draftTask : null);
+    if (t == null) return null;
+    final bill = t.isBill ? ' · ${app.cash(t.amount)} logged when it\'s ticked off' : '';
+    final done = master != null && t.repeat.isEmpty && t.done;
+    final text = master == null
+        ? 'Also adds a to-do$bill.'
+        : done
+            ? 'Linked task · done${t.isBill ? ' · ${app.cash(t.amount)} paid' : ''}.'
+            : 'Linked task$bill. Name, line, day and time stay in step.';
+    return Container(
+      margin: const EdgeInsets.only(top: 12, bottom: 4),
+      padding: const EdgeInsets.fromLTRB(10, 9, 12, 9),
+      decoration: BoxDecoration(color: pal.field, borderRadius: BorderRadius.circular(10)),
+      child: Row(children: [
+        Container(
+          width: 20,
+          height: 20,
+          decoration: BoxDecoration(shape: BoxShape.circle, color: done ? kYellow : null, border: Border.all(color: kYellow, width: 2)),
+          child: done ? const Center(child: SvgIcon('check', size: 12, color: Colors.black)) : null,
+        ),
+        const SizedBox(width: 10),
+        Expanded(child: Text(text, style: inter(13.5, FontWeight.w600, height: 1.35, color: pal.ink))),
+      ]),
+    );
   }
 
   /// "Save to" row: which Google calendar a new/local event goes to.
@@ -260,6 +303,7 @@ class _EventFormState extends State<EventForm> {
                 ),
               ]),
             ),
+            ?_linkNote(pal),
             fr('All day', PillSwitch(value: allDay, onChanged: ro ? null : (x) => setState(() {
                   allDay = x;
                   dur = x ? 1 : 30;

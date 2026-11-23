@@ -3,6 +3,8 @@
 // are kept in `extra` and written back out untouched.
 import 'package:characters/characters.dart';
 
+import 'money.dart';
+import 'tasks.dart';
 import 'util.dart';
 
 const kPalette = ['#1d6cf2', '#ff8a00', '#ff5a1f', '#ffd400', '#22c55e', '#e85ad8', '#14b8a6', '#8b5cf6'];
@@ -79,6 +81,10 @@ class Event {
   Repeat? repeat;
   List<int>? exdates;
   int? remind; // null = use the default
+
+  /// Task this event was made with (quick add's "Also: calendar"). The two
+  /// stay in step: same name, line, day and time; the task's tick shows here.
+  String? task;
   bool catManual, dirty, dirtyNotes, sample;
   Map<String, dynamic> extra;
 
@@ -104,6 +110,7 @@ class Event {
     this.repeat,
     this.exdates,
     this.remind,
+    this.task,
     this.catManual = false,
     this.dirty = false,
     this.dirtyNotes = false,
@@ -117,14 +124,14 @@ class Event {
         id: id, title: title, loc: loc, notes: notes, link: link, cat: cat, source: source,
         start: start, end: end, allDay: allDay, key: key, feed: feed, gid: gid, calId: calId,
         repeat: repeat == null ? null : Repeat(repeat!.freq, repeat!.until),
-        exdates: exdates == null ? null : List.of(exdates!), remind: remind,
+        exdates: exdates == null ? null : List.of(exdates!), remind: remind, task: task,
         catManual: catManual, dirty: dirty, dirtyNotes: dirtyNotes, sample: sample,
         extra: Map.of(extra), seriesId: seriesId, occKey: occKey,
       );
 
   static const _known = {
     'id', 'title', 'loc', 'notes', 'link', 'cat', 'source', 'start', 'end', 'allDay', 'key', 'feed', 'gid', 'calId',
-    'repeat', 'exdates', 'remind', 'catManual', 'dirty', 'dirtyNotes', 'sample', 'seriesId', 'occKey',
+    'repeat', 'exdates', 'remind', 'task', 'catManual', 'dirty', 'dirtyNotes', 'sample', 'seriesId', 'occKey',
   };
 
   Map<String, dynamic> toJson() => {
@@ -135,6 +142,7 @@ class Event {
         if (repeat != null) 'repeat': repeat!.toJson(),
         if (exdates != null) 'exdates': exdates,
         'remind': remind ?? '',
+        'task': ?task,
         if (catManual) 'catManual': true,
         if (dirty) 'dirty': true,
         if (dirtyNotes) 'dirtyNotes': true,
@@ -176,6 +184,30 @@ class Settings {
 
   /// Light vibration on taps. Native-only.
   bool haptics = true;
+
+  /// Board layout: 'day' (departure board) | 'week' (7-day agenda). Native-only.
+  String view = 'day';
+
+  /// The first-launch welcome has been answered. Native-only.
+  bool welcomed = false;
+
+  /// Automatic daily backup to a file the user picked (Android content URI).
+  bool autoBackup = false;
+  String backupUri = '', backupName = '';
+  int lastBackup = 0, lastBackupTxns = 0;
+
+  /// Money notifications: bills due (morning), the evening log nudge, budget alerts.
+  bool billReminders = true, logReminder = true, budgetAlerts = true;
+
+  /// Minutes after midnight for the bill heads-up and the evening nudge.
+  int billTime = 9 * 60, logTime = 21 * 60;
+
+  /// Money tab: net worth shown as dots (the eye by NET WORTH).
+  bool hideNet = false;
+
+  /// Today tab: the net-worth numbers and graph folded away (the arrow by NET
+  /// WORTH there). Its own switch, separate from the Money tab's eye.
+  bool foldTodayNet = false;
   Map<String, dynamic> extra = {};
 
   Map<String, dynamic> toJson() => {
@@ -193,6 +225,20 @@ class Settings {
         'lastSyncError': lastSyncError,
         'theme': theme,
         'haptics': haptics,
+        'view': view,
+        'welcomed': welcomed,
+        'autoBackup': autoBackup,
+        'backupUri': backupUri,
+        'backupName': backupName,
+        'lastBackup': lastBackup,
+        'lastBackupTxns': lastBackupTxns,
+        'billReminders': billReminders,
+        'logReminder': logReminder,
+        'budgetAlerts': budgetAlerts,
+        'billTime': billTime,
+        'logTime': logTime,
+        if (hideNet) 'hideNet': true,
+        if (foldTodayNet) 'foldTodayNet': true,
       };
 }
 
@@ -205,6 +251,12 @@ class AppData {
   Map<String, dynamic> seriesProps = {};
   Settings settings = Settings();
 
+  /// To-dos (native-only; web backups without them load as an empty list).
+  List<Task> tasks = [];
+
+  /// Budget, categories and transactions (native-only).
+  Money money = Money();
+
   Map<String, dynamic> toJson() => {
         'v': v,
         'lines': lines.map((l) => l.toJson()).toList(),
@@ -213,6 +265,8 @@ class AppData {
         'pendingDeletes': pendingDeletes,
         'seriesProps': seriesProps,
         'settings': settings.toJson(),
+        'tasks': tasks.map((t) => t.toJson()).toList(),
+        'money': money.toJson(),
       };
 
   Line lineOf(String id) => lines.firstWhere((l) => l.id == id, orElse: () => lines.first);
@@ -270,6 +324,7 @@ Event? normEvent(dynamic raw, Set<String> ids, String fallbackCat) {
     repeat: repeat,
     exdates: e['exdates'] is List ? (e['exdates'] as List).map(_num).whereType<num>().map((n) => n.round()).toList() : null,
     remind: e['remind'] == '' ? null : rem?.round(),
+    task: e['task'] is String && (e['task'] as String).isNotEmpty ? e['task'] as String : null,
     catManual: _truthy(e['catManual']),
     dirty: _truthy(e['dirty']),
     dirtyNotes: _truthy(e['dirtyNotes']),
@@ -304,12 +359,14 @@ AppData normalize(Map<String, dynamic>? s) {
   if (h is Map) d.hidden = h.map((k, v) => MapEntry(k.toString(), 1));
   if (s['pendingDeletes'] is List) d.pendingDeletes = List.of(s['pendingDeletes']);
   if (s['seriesProps'] is Map) d.seriesProps = Map<String, dynamic>.from(s['seriesProps']);
+  if (s['tasks'] is List) d.tasks = (s['tasks'] as List).map((t) => taskFromJson(t, ids, d.lines.first.id)).whereType<Task>().toList();
+  if (s.containsKey('money')) d.money = moneyFromJson(s['money']);
 
   final st = d.settings;
   final os = s['settings'];
   if (os is Map) {
     st.extra = Map<String, dynamic>.from(os)
-      ..removeWhere((k, _) => const {'mode', 'feeds', 'clientId', 'calendars', 'defaultCalId', 'sound', 'notify', 'remindDefault', 'lastSync', 'lastSyncMsg', 'lastSyncError', 'theme', 'haptics'}.contains(k));
+      ..removeWhere((k, _) => const {'mode', 'feeds', 'clientId', 'calendars', 'defaultCalId', 'sound', 'notify', 'remindDefault', 'lastSync', 'lastSyncMsg', 'lastSyncError', 'theme', 'haptics', 'view', 'welcomed', 'autoBackup', 'backupUri', 'backupName', 'lastBackup', 'lastBackupTxns', 'billReminders', 'logReminder', 'budgetAlerts', 'billTime', 'logTime', 'hideNet', 'foldTodayNet'}.contains(k));
     st.mode = const ['ical', 'api'].contains(os['mode']) ? os['mode'] as String : 'none';
     st.clientId = _str(os['clientId'], '').trim();
     if (os['calendars'] is List) {
@@ -335,7 +392,23 @@ AppData normalize(Map<String, dynamic>? s) {
     st.lastSyncError = _str(os['lastSyncError'], '');
     if (const ['system', 'dark', 'light'].contains(os['theme'])) st.theme = os['theme'];
     if (os['haptics'] is bool) st.haptics = os['haptics'];
+    if (const ['day', 'week', 'month'].contains(os['view'])) st.view = os['view'];
+    if (os['autoBackup'] is bool) st.autoBackup = os['autoBackup'];
+    st.backupUri = _str(os['backupUri'], '');
+    st.backupName = _str(os['backupName'], '');
+    st.lastBackup = _num(os['lastBackup'])?.round() ?? 0;
+    st.lastBackupTxns = _num(os['lastBackupTxns'])?.round() ?? 0;
+    if (os['billReminders'] is bool) st.billReminders = os['billReminders'];
+    if (os['logReminder'] is bool) st.logReminder = os['logReminder'];
+    if (os['budgetAlerts'] is bool) st.budgetAlerts = os['budgetAlerts'];
+    final bt = _num(os['billTime'])?.round(), lt = _num(os['logTime'])?.round();
+    if (bt != null && bt >= 0 && bt < 1440) st.billTime = bt;
+    if (lt != null && lt >= 0 && lt < 1440) st.logTime = lt;
+    st.hideNet = os['hideNet'] == true;
+    st.foldTodayNet = os['foldTodayNet'] == true;
   }
+  // Saved data (older installs, web backups) predates the welcome: don't show it again.
+  st.welcomed = os is Map && os['welcomed'] is bool ? os['welcomed'] as bool : true;
   return d;
 }
 

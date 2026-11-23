@@ -125,6 +125,7 @@ MergeResult merge(AppData s, List<IcsItem> items, String source, String feed, bo
         cat: hintCat ?? autoCat(s, it.title, it.loc),
         catManual: h['catManual'] == true,
         remind: h['remind'] is num ? (h['remind'] as num).round() : null,
+        task: h['task'] is String ? h['task'] as String : null,
         gid: it.gid,
         calId: it.calId,
         key: it.key,

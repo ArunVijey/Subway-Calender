@@ -1,27 +1,34 @@
 // Reminder notifications (scheduled ahead, so they fire with the app closed)
 // and the in-app chime.
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
+
+import 'platform.dart';
 
 /// One alert to schedule.
 class Alert {
   final int at;
   final String title, body;
   final bool boarding; // true = "Now boarding" (before), false = "Now departing"
-  const Alert(this.at, this.title, this.body, this.boarding);
+
+  /// 'board' (event and task reminders) or 'money' (bills due, the evening log nudge).
+  final String kind;
+  const Alert(this.at, this.title, this.body, this.boarding, {this.kind = 'board'});
 }
 
 class Alerts {
   final _plugin = FlutterLocalNotificationsPlugin();
-  final _player = AudioPlayer();
   bool _ready = false;
+  Future<void>? _starting;
 
   AndroidFlutterLocalNotificationsPlugin? get _android =>
       _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
 
-  Future<void> init() async {
+  /// Starts the plugin; everything below waits for it, so it can run alongside the app's own loading.
+  Future<void> init() => _starting ??= _init();
+
+  Future<void> _init() async {
     try {
       await _plugin.initialize(
         settings: const InitializationSettings(
@@ -33,11 +40,11 @@ class Alerts {
     } catch (e) {
       debugPrint('notifications unavailable: $e');
     }
-    await _player.setReleaseMode(ReleaseMode.stop);
   }
 
   /// Asks for permission. Returns whether notifications may be shown.
   Future<bool> requestPermission() async {
+    await _starting;
     if (!_ready) return false;
     final a = _android;
     if (a != null) return await a.requestNotificationsPermission() ?? false;
@@ -46,6 +53,7 @@ class Alerts {
   }
 
   Future<bool> enabled() async {
+    await _starting;
     if (!_ready) return false;
     final a = _android;
     if (a != null) return await a.areNotificationsEnabled() ?? false;
@@ -56,10 +64,11 @@ class Alerts {
     'boarding': ('Boarding alerts', 'Before a departure', 'chime_boarding'),
     'departing': ('Departure alerts', 'When an event starts', 'chime_departing'),
     'silent': ('Silent alerts', 'Reminders without the chime', null),
+    'money': ('Money', 'Bills due, the evening log reminder and budget alerts', null),
   };
 
   NotificationDetails _details(Alert a, bool sound) {
-    final ch = !sound ? 'silent' : (a.boarding ? 'boarding' : 'departing');
+    final ch = a.kind == 'money' ? 'money' : (!sound ? 'silent' : (a.boarding ? 'boarding' : 'departing'));
     final (name, desc, raw) = _channels[ch]!;
     return NotificationDetails(
       android: AndroidNotificationDetails(
@@ -69,20 +78,31 @@ class Alerts {
         importance: Importance.high,
         priority: Priority.high,
         category: AndroidNotificationCategory.reminder,
-        playSound: raw != null,
+        playSound: raw != null || ch == 'money',
         sound: raw == null ? null : RawResourceAndroidNotificationSound(raw),
       ),
       iOS: DarwinNotificationDetails(presentSound: sound, sound: sound ? (a.boarding ? 'chime_boarding.wav' : 'chime_departing.wav') : null),
     );
   }
 
+  /// What was last handed to the system, so an unchanged list isn't cancelled
+  /// and re-registered (each one is an alarm plus a write the plugin keeps).
+  String? _scheduled;
+
   /// Replaces every pending reminder with [alerts].
   Future<void> schedule(List<Alert> alerts, {required bool sound}) async {
+    await _starting;
     if (!_ready) return;
     try {
-      await _plugin.cancelAllPendingNotifications();
-      if (alerts.isEmpty) return;
       final exact = await _android?.canScheduleExactNotifications() ?? true;
+      final sig = [sound, exact, for (final a in alerts) '${a.at}|${a.kind}|${a.boarding}|${a.title}|${a.body}'].join('\n');
+      if (sig == _scheduled) return;
+      _scheduled = null;
+      await _plugin.cancelAllPendingNotifications();
+      if (alerts.isEmpty) {
+        _scheduled = sig;
+        return;
+      }
       var id = 1;
       for (final a in alerts) {
         await _plugin.zonedSchedule(
@@ -94,21 +114,29 @@ class Alerts {
           body: a.body,
         );
       }
+      _scheduled = sig;
     } catch (e) {
       debugPrint('scheduling failed: $e');
     }
   }
 
+  /// Shows a notification right away (budget alerts).
+  Future<void> showNow(int id, String title, String body) async {
+    await _starting;
+    if (!_ready) return;
+    try {
+      await _plugin.show(id: id, title: title, body: body, notificationDetails: _details(Alert(0, title, body, false, kind: 'money'), true));
+    } catch (e) {
+      debugPrint('notify failed: $e');
+    }
+  }
+
   Future<void> cancelAll() async {
+    await _starting;
+    _scheduled = null;
     if (_ready) await _plugin.cancelAllPendingNotifications();
   }
 
-  Future<void> chime({required bool boarding}) async {
-    try {
-      await _player.stop();
-      await _player.play(AssetSource(boarding ? 'sounds/chime_boarding.wav' : 'sounds/chime_departing.wav'));
-    } catch (e) {
-      debugPrint('chime failed: $e');
-    }
-  }
+  /// Plays the chime now (res/raw, the same sound as the notifications).
+  Future<void> chime({required bool boarding}) => AppPlatform.chime(boarding: boarding);
 }

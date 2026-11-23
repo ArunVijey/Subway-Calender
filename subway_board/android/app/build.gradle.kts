@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
@@ -28,13 +30,53 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // A side-by-side preview build (`--android-project-arg=preview=true`):
+        // its own app id and name, so it never touches the installed app's data.
+        val preview = project.hasProperty("preview")
+        if (preview) applicationIdSuffix = ".preview"
+        manifestPlaceholders["appLabel"] = if (preview) "Board β" else "Subway Board"
+
+        // `flutter build apk --target-platform android-arm64` only puts Flutter's
+        // own engine in for that CPU; plugins' native libraries still came in for
+        // every CPU. Keep just the ones the build is for.
+        val abis = (project.findProperty("target-platform") as String?)
+            ?.split(',')
+            ?.mapNotNull { mapOf("android-arm64" to "arm64-v8a", "android-arm" to "armeabi-v7a", "android-x64" to "x86_64")[it.trim()] }
+            .orEmpty()
+        if (abis.isNotEmpty() && !project.hasProperty("split-per-abi")) ndk { abiFilters += abis }
+    }
+
+    packaging {
+        resources {
+            // Library licence texts and Kotlin reflection metadata the app never reads.
+            excludes += listOf("META-INF/**/LICENSE*", "kotlin/**.kotlin_builtins", "DebugProbesKt.bin")
+        }
+    }
+
+    signingConfigs {
+        create("release") {
+            // Credentials live in android/key.properties (gitignored).
+            val keyProps = Properties()
+            val keyPropsFile = rootProject.file("key.properties")
+            if (keyPropsFile.exists()) {
+                keyPropsFile.inputStream().use { keyProps.load(it) }
+                storeFile = file(keyProps.getProperty("storeFile"))
+                storePassword = keyProps.getProperty("storePassword")
+                keyAlias = keyProps.getProperty("keyAlias")
+                keyPassword = keyProps.getProperty("keyPassword")
+            }
+        }
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Fall back to the debug key when key.properties is absent (e.g. fresh clone).
+            signingConfig = if (rootProject.file("key.properties").exists()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }

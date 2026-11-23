@@ -6,9 +6,14 @@ import '../app/store.dart';
 import '../core/util.dart';
 import 'board.dart';
 import 'form.dart';
-import 'lines.dart';
+import 'money.dart';
+import 'quick_add.dart';
+import 'search.dart';
+import 'tasks.dart';
+import 'today.dart';
 import 'settings.dart';
 import 'haptics.dart';
+import 'motion.dart';
 import 'theme.dart';
 import 'widgets.dart';
 
@@ -33,7 +38,12 @@ class _ShellState extends State<Shell> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) context.read<AppState>().resumed();
+    final app = context.read<AppState>();
+    if (state == AppLifecycleState.resumed) {
+      app.resumed();
+    } else if (state == AppLifecycleState.hidden || state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+      app.paused();
+    }
   }
 
   @override
@@ -45,15 +55,18 @@ class _ShellState extends State<Shell> with WidgetsBindingObserver {
     final keyboard = mq.viewInsets.bottom > 0;
 
     final view = switch (app.tab) {
-      'lines' => const LinesView(),
+      'tasks' => const TasksView(),
+      'money' => const MoneyView(),
+      'today' => const TodayView(),
       'add' => EventForm(key: ValueKey(app.formSeq)),
       _ => const BoardView(),
     };
+    final reduce = mq.disableAnimations || app.instantTab;
 
     return PopScope(
-      canPop: app.tab == 'board',
+      canPop: app.tab == 'today',
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) app.switchTab('board');
+        if (!didPop) app.switchTab('today');
       },
       child: Scaffold(
         backgroundColor: kBlack,
@@ -66,7 +79,24 @@ class _ShellState extends State<Shell> with WidgetsBindingObserver {
                 padding: EdgeInsets.fromLTRB(18, 10 + mq.padding.top, 18, 0),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                   const _TopBar(),
-                  Expanded(child: view),
+                  Expanded(
+                    // Tabs cross-fade with a slight rise and settle, like a UIKit tab switch.
+                    child: AnimatedSwitcher(
+                      duration: reduce ? Duration.zero : const Duration(milliseconds: 420),
+                      reverseDuration: reduce ? Duration.zero : const Duration(milliseconds: 160),
+                      switchInCurve: Motion.smooth,
+                      switchOutCurve: Curves.easeOut,
+                      layoutBuilder: (cur, prev) => Stack(fit: StackFit.expand, children: [...prev, ?cur]),
+                      transitionBuilder: (child, anim) => FadeTransition(
+                        opacity: anim.drive(CurveTween(curve: const Interval(0, .6))),
+                        child: SlideTransition(
+                          position: anim.drive(Tween(begin: const Offset(0, .025), end: Offset.zero)),
+                          child: ScaleTransition(scale: anim.drive(Tween(begin: .985, end: 1)), child: child),
+                        ),
+                      ),
+                      child: KeyedSubtree(key: ValueKey(app.tab == 'add' ? 'add${app.formSeq}' : app.tab), child: view),
+                    ),
+                  ),
                 ]),
               ),
             ),
@@ -117,6 +147,16 @@ class _TopBar extends StatelessWidget {
             child: Text(left, maxLines: 1, overflow: TextOverflow.ellipsis, style: cond(15, FontWeight.w800, ls: .08, color: Colors.white)),
           ),
         ),
+        Semantics(
+          button: true,
+          label: 'Search',
+          excludeSemantics: true,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: tapped(() => openSearch(context)),
+            child: const Padding(padding: EdgeInsets.fromLTRB(14, 0, 14, 0), child: Icon(Icons.search, size: 22, color: Colors.white)),
+          ),
+        ),
         if (sample)
           GestureDetector(
             onTap: tapped(() async {
@@ -127,7 +167,9 @@ class _TopBar extends StatelessWidget {
             child: Text('✕', style: cond(20, FontWeight.w800, color: Colors.white)),
           )
         else
-          Text(fmtT(nowMs(), use24h: app.use24h).toUpperCase(), style: cond(12, FontWeight.w800, ls: .06, color: Colors.white)),
+          RollingText(fmtT(nowMs(), use24h: app.use24h).toUpperCase(),
+              style: cond(12, FontWeight.w800, ls: .06, color: Colors.white).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+              animate: !MediaQuery.disableAnimationsOf(context)),
       ]),
     );
   }
@@ -135,40 +177,93 @@ class _TopBar extends StatelessWidget {
 
 class _Tabs extends StatelessWidget {
   const _Tabs();
+  static const _slots = ['today', 'board', 'tasks', 'money', '+'];
+
   @override
   Widget build(BuildContext context) {
     final app = context.watch<AppState>();
     final bottom = MediaQuery.paddingOf(context).bottom;
-    Widget tab(String id, String icon, String label) {
+    final idx = _slots.indexOf(app.tab);
+    final today = todayStr();
+    // Open tasks due today or overdue, shown as a count on TASKS.
+    final due = app.s.tasks.where((t) => !t.done && t.due.isNotEmpty && t.due.compareTo(today) <= 0).length;
+
+    Widget tab(String id, String icon, String label, {int badge = 0}) {
       final on = app.tab == id;
-      final color = on ? kYellow : kTabIdle;
       return Expanded(
         child: Semantics(
           button: true,
           selected: on,
-          label: label,
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: tapped(() => app.switchTab(id)),
-            child: Stack(clipBehavior: Clip.none, alignment: Alignment.topCenter, children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(0, 8, 0, 4),
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  SvgIcon(icon, size: 26, color: color),
+          label: badge > 0 ? '$label, $badge due' : label,
+          excludeSemantics: true,
+          child: Pressable(
+            scale: .9,
+            onTap: () => app.switchTab(id),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(0, 8, 0, 4),
+              child: TweenAnimationBuilder<Color?>(
+                tween: ColorTween(end: on ? kYellow : kTabIdle),
+                duration: const Duration(milliseconds: 250),
+                builder: (_, color, _) => Column(mainAxisSize: MainAxisSize.min, children: [
+                  Stack(clipBehavior: Clip.none, children: [
+                    AnimatedScale(
+                      duration: Motion.bouncyDur,
+                      curve: Motion.bouncy,
+                      scale: on ? 1.08 : 1,
+                      child: SvgIcon(icon, size: 26, color: color!),
+                    ),
+                    Positioned(
+                      right: -11,
+                      top: -5,
+                      child: AnimatedScale(
+                        duration: Motion.bouncyDur,
+                        curve: Motion.bouncy,
+                        scale: badge > 0 ? 1 : 0,
+                        child: Container(
+                          constraints: const BoxConstraints(minWidth: 18),
+                          height: 18,
+                          padding: const EdgeInsets.symmetric(horizontal: 5),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(color: kYellow, borderRadius: BorderRadius.circular(9), border: Border.all(color: kBlack, width: 2)),
+                          child: Text(badge > 99 ? '99+' : '$badge', style: cond(11, FontWeight.w800, color: Colors.black, height: 1)),
+                        ),
+                      ),
+                    ),
+                  ]),
                   const SizedBox(height: 5),
                   Text(label, style: cond(14, FontWeight.w800, ls: .08, color: color)),
                 ]),
               ),
-              if (on)
-                Positioned(
-                  top: -9,
-                  child: Container(width: 28, height: 3, decoration: BoxDecoration(color: kYellow, borderRadius: BorderRadius.circular(2))),
-                ),
-            ]),
+            ),
           ),
         ),
       );
     }
+
+    final plus = Expanded(
+      child: Semantics(
+        button: true,
+        label: 'Add a task, event or spend',
+        excludeSemantics: true,
+        child: Pressable(
+          scale: .88,
+          onTap: () => openQuickAdd(context),
+          child: Center(
+            heightFactor: 1,
+            child: Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: kYellow,
+                shape: BoxShape.circle,
+                boxShadow: [BoxShadow(color: kYellow.withValues(alpha: .28), blurRadius: 18, offset: const Offset(0, 4))],
+              ),
+              child: const Center(child: SvgIcon('plus', size: 28, color: Colors.black)),
+            ),
+          ),
+        ),
+      ),
+    );
 
     return Container(
       decoration: const BoxDecoration(color: kBlack, border: Border(top: BorderSide(color: Color(0xFF1C1C20)))),
@@ -177,10 +272,32 @@ class _Tabs extends StatelessWidget {
         heightFactor: 1,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 560),
-          child: Row(children: [
-            tab('board', 'grid', 'BOARD'),
-            tab('lines', 'lines', 'LINES'),
-            tab('add', 'plus', 'ADD'),
+          child: Stack(clipBehavior: Clip.none, children: [
+            Row(children: [
+              tab('today', 'today', 'TODAY'),
+              tab('board', 'grid', 'BOARD'),
+              tab('tasks', 'tasks', 'TASKS', badge: due),
+              tab('money', 'money', 'MONEY'),
+              plus,
+            ]),
+            // The yellow bar glides to the active tab on a spring.
+            if (idx >= 0)
+              Positioned(
+                left: 0,
+                right: 0,
+                top: -1,
+                child: AnimatedAlign(
+                  duration: Motion.snappyDur,
+                  curve: Motion.snappy,
+                  alignment: Alignment(-1 + 2 * idx / (_slots.length - 1), 0),
+                  child: FractionallySizedBox(
+                    widthFactor: 1 / _slots.length,
+                    child: Center(
+                      child: Container(width: 28, height: 3, decoration: BoxDecoration(color: kYellow, borderRadius: BorderRadius.circular(2))),
+                    ),
+                  ),
+                ),
+              ),
           ]),
         ),
       ),
@@ -210,11 +327,13 @@ class _ToastState extends State<_Toast> {
       bottom: 16,
       child: IgnorePointer(
         ignoring: !on || t.action == null,
+        // Springs up with a little overshoot; drops away on an ease-in.
         child: AnimatedSlide(
-          duration: const Duration(milliseconds: 250),
-          offset: on ? Offset.zero : const Offset(0, .4),
+          duration: on ? Motion.bouncyDur : const Duration(milliseconds: 260),
+          curve: on ? Motion.bouncy : Curves.easeInCubic,
+          offset: on ? Offset.zero : const Offset(0, .6),
           child: AnimatedOpacity(
-            duration: const Duration(milliseconds: 250),
+            duration: Duration(milliseconds: on ? 200 : 240),
             opacity: on ? 1 : 0,
             child: Center(
               child: shown == null

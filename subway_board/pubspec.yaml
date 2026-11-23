@@ -1,8 +1,8 @@
 name: subwayboard
-description: "Subway Board departure calendar"
+description: "Subway Board: calendar, tasks and money on one departure board"
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 2.3.3+10
 
 environment:
   sdk: ^3.13.5
@@ -11,15 +11,11 @@ dependencies:
   flutter:
     sdk: flutter
   http: ^1.6.0
-  path_provider: ^2.1.6
   provider: ^6.1.5+1
   timezone: ^0.11.2
   flutter_local_notifications: ^22.3.2
-  audioplayers: ^6.8.1
   file_picker: ^13.1.0
-  share_plus: ^13.3.1
   url_launcher: ^6.3.3
-  flutter_svg: ^2.3.0
   characters: ^1.4.1
   google_sign_in: ^7.2.0
   flutter_timezone: ^5.1.1
@@ -32,9 +28,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-
-  assets:
-    - assets/sounds/
 
   fonts:
     - family: BarlowCondensed

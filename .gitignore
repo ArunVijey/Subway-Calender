@@ -7,3 +7,9 @@ GoogleService-Info.plist
 *.jks
 *.keystore
 key.properties
+
+# Release builds, symbols and phone backups stay on the PC (APKs go to GitHub Releases)
+dist/
+*.apk
+*.aab
+local.properties

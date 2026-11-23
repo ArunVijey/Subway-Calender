@@ -1,5 +1,6 @@
 // iCalendar parsing, RRULE expansion and export — a direct port of the web
 // app's parseIcs / expand / toReal so imports produce identical events.
+import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
 import 'model.dart';
@@ -24,6 +25,8 @@ Wall wallL(int ms) {
   return Wall(d.year, d.month, d.day, d.hour, d.minute, d.second);
 }
 
+bool _tzLoaded = false;
+
 int _localMs(Wall w) => DateTime(w.y, w.mo, w.d, w.h, w.mi, w.s).millisecondsSinceEpoch;
 
 /// Converts a wall time in [zone] (IANA name, 'UTC', or null = device local) to epoch ms.
@@ -32,6 +35,12 @@ int toReal(Wall w, String? zone, bool allDay) {
   if (zone == null) return _localMs(w);
   if (zone == 'UTC') return naive(w);
   try {
+    // The zone database is only read when an imported event names a zone,
+    // not at every launch.
+    if (!_tzLoaded) {
+      tzdata.initializeTimeZones();
+      _tzLoaded = true;
+    }
     final loc = tz.getLocation(zone);
     return tz.TZDateTime(loc, w.y, w.mo, w.d, w.h, w.mi, w.s).millisecondsSinceEpoch;
   } catch (_) {
@@ -181,9 +190,16 @@ List<int> expand(String rs, IcsDate ds, int durMs, Window win) {
   }
 
   final sdWd = sd.weekday % 7;
+  // Without COUNT, occurrences that end before the window change nothing, so
+  // start near the window instead of at DTSTART (a daily event from a year
+  // ago used to walk 365 days on every redraw). The margin keeps it exact:
+  // anything skipped ends well before [lo].
+  final early = lo - durMs - 7 * kDay;
+  final ff = count == 0 && early > s0;
   switch (r['FREQ']) {
     case 'DAILY':
-      for (var k = 0; k < 100000; k++) {
+      final k0 = ff ? ((early - day0 - tod) ~/ (iv * kDay)).clamp(0, 100000) : 0;
+      for (var k = k0; k < 100000; k++) {
         final t = day0 + k * iv * kDay + tod;
         final d = DateTime.fromMillisecondsSinceEpoch(t, isUtc: true);
         if (byM.isNotEmpty && !byM.contains(d.month)) continue;
@@ -193,16 +209,19 @@ List<int> expand(String rs, IcsDate ds, int durMs, Window win) {
     case 'WEEKLY':
       final offs = (byDay.isNotEmpty ? byDay.map((b) => b.wd) : [sdWd]).map((w) => (w + 6) % 7).toList()..sort();
       final ws = day0 - ((sdWd + 6) % 7) * kDay;
+      final w0 = ff ? ((early - ws - tod) ~/ (iv * 7 * kDay) - 1).clamp(0, 20000) : 0;
       wk:
-      for (var w = 0; w < 20000; w++) {
+      for (var w = w0; w < 20000; w++) {
         for (final o in offs) {
           if (!emit(ws + w * iv * 7 * kDay + o * kDay + tod)) break wk;
         }
       }
     case 'MONTHLY':
       final y0 = sd.year, m0 = sd.month - 1;
+      final ed = DateTime.fromMillisecondsSinceEpoch(early, isUtc: true);
+      final k0 = ff ? (((ed.year - y0) * 12 + ed.month - 1 - m0 - 1) ~/ iv).clamp(0, 6000) : 0;
       mo:
-      for (var k = 0; k < 6000; k++) {
+      for (var k = k0; k < 6000; k++) {
         final a = m0 + k * iv, y = y0 + a ~/ 12, m = a % 12;
         if (byM.isNotEmpty && !byM.contains(m + 1)) continue;
         for (final d in mDays(y, m)) {

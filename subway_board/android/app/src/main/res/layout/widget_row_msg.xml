@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Empty states: "NO MORE DEPARTURES TODAY", "NO DEPARTURES", ... -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/msg_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingStart="14dp"
+    android:paddingTop="40dp"
+    android:paddingEnd="14dp"
+    android:paddingBottom="40dp">
+
+    <ImageView
+        android:id="@+id/msg_box"
+        android:layout_width="match_parent"
+        android:layout_height="46dp"
+        android:scaleType="fitXY"
+        android:src="@drawable/w_round_outline"
+        android:visibility="gone" />
+
+    <ImageView
+        android:id="@+id/msg"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center" />
+</FrameLayout>
