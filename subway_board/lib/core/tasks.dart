@@ -21,9 +21,28 @@ class Task {
   bool star, done;
   int doneAt, created;
 
-  /// '' | daily | weekdays | weekly | monthly | yearly. Completing a repeating
-  /// task logs it as done and moves the task to its next due day.
+  /// '' | daily | weekdays | weekly | biweekly | monthly | quarterly | yearly,
+  /// or a custom rule 'c:N:U' / 'c:N:w:1,4' (every N days/weeks/months/years,
+  /// weeks optionally on ISO weekdays). Completing a repeating task logs it as
+  /// done and moves the task to its next due day.
   String repeat;
+
+  /// The next due day counts from the day it's ticked off, not the due day.
+  bool repFromDone;
+
+  /// Last day the repeat runs (YYYY-MM-DD), '' = no end.
+  String repUntil;
+
+  /// Repeats left after this one; null = no limit.
+  int? repLeft;
+
+  /// 0 = none, 1 = highest … 3 = lowest.
+  int prio;
+
+  /// Reminders, in minutes before the due moment (the due time, or 9:00 on
+  /// the due day for a task with no time). null = the old default: one at the
+  /// due time when there is one.
+  List<int>? remind;
 
   /// Bill amount in minor units (paise/cents); 0 = not a bill.
   int amount;
@@ -50,6 +69,11 @@ class Task {
     this.doneAt = 0,
     int? created,
     this.repeat = '',
+    this.repFromDone = false,
+    this.repUntil = '',
+    this.repLeft,
+    this.prio = 0,
+    this.remind,
     this.amount = 0,
     this.mcat = '',
     this.acct = '',
@@ -60,11 +84,22 @@ class Task {
 
   Task copy() => Task(
         id: id, title: title, notes: notes, cat: cat, due: due, time: time, star: star, done: done,
-        doneAt: doneAt, created: created, repeat: repeat, amount: amount, mcat: mcat, acct: acct,
+        doneAt: doneAt, created: created, repeat: repeat, repFromDone: repFromDone, repUntil: repUntil, repLeft: repLeft,
+        prio: prio, remind: remind == null ? null : List.of(remind!), amount: amount, mcat: mcat, acct: acct,
         subs: subs.map((s) => s.copy()).toList(), txn: txn,
       );
 
   bool get isBill => amount > 0;
+
+  /// The reminders that actually fire (see [remind]).
+  List<int> get reminders => remind ?? (time != null ? const [0] : const []);
+
+  /// Moment a reminder [before] minutes ahead fires, or null without a date.
+  int? remindAt(int before) {
+    if (due.isEmpty) return null;
+    final base = time == null ? dms(due) + kTaskDayBase * kMin : dueMs!;
+    return base - before * kMin;
+  }
 
   /// Due moment in ms (end of day when there's no time), or null without a date.
   int? get dueMs {
@@ -91,6 +126,11 @@ class Task {
         if (doneAt > 0) 'doneAt': doneAt,
         'created': created,
         if (repeat.isNotEmpty) 'repeat': repeat,
+        if (repFromDone) 'repFromDone': true,
+        if (repUntil.isNotEmpty) 'repUntil': repUntil,
+        'repLeft': ?repLeft,
+        if (prio > 0) 'prio': prio,
+        'remind': ?remind,
         if (amount > 0) 'amount': amount,
         if (mcat.isNotEmpty) 'mcat': mcat,
         if (acct.isNotEmpty) 'acct': acct,
@@ -100,6 +140,96 @@ class Task {
 }
 
 const kTaskRepeats = ['daily', 'weekdays', 'weekly', 'biweekly', 'monthly', 'quarterly', 'yearly'];
+
+/// Minutes after midnight that "on the day" means for a task with no time.
+const kTaskDayBase = 9 * 60;
+
+final _custom = RegExp(r'^c:([1-9]\d{0,2}):([dwmy])(?::([1-7](?:,[1-7]){0,6}))?$');
+
+/// A custom repeat rule, or null for presets and ''.
+({int n, String unit, List<int> days})? customRepeat(String r) {
+  final m = _custom.firstMatch(r);
+  if (m == null) return null;
+  final days = m[3] == null ? <int>[] : (m[3]!.split(',').map(int.parse).toSet().toList()..sort());
+  return (n: int.parse(m[1]!), unit: m[2]!, days: m[2] == 'w' ? days : <int>[]);
+}
+
+/// The rule as (every, unit, weekdays), presets included; null for ''.
+({int n, String unit, List<int> days})? repeatParts(String r) => switch (r) {
+      'daily' => (n: 1, unit: 'd', days: <int>[]),
+      'weekdays' => (n: 1, unit: 'w', days: [1, 2, 3, 4, 5]),
+      'weekly' => (n: 1, unit: 'w', days: <int>[]),
+      'biweekly' => (n: 2, unit: 'w', days: <int>[]),
+      'monthly' => (n: 1, unit: 'm', days: <int>[]),
+      'quarterly' => (n: 3, unit: 'm', days: <int>[]),
+      'yearly' => (n: 1, unit: 'y', days: <int>[]),
+      _ => customRepeat(r),
+    };
+
+/// Builds a rule; simple ones come back as the matching preset.
+String makeRepeat(int n, String unit, [List<int> days = const []]) {
+  final d = (days.toSet().toList()..sort());
+  if (unit != 'w') d.clear();
+  if (n == 1 && unit == 'd') return 'daily';
+  if (n == 1 && unit == 'w' && d.isEmpty) return 'weekly';
+  if (n == 1 && unit == 'w' && d.length == 5 && d.first == 1 && d.last == 5) return 'weekdays';
+  if (n == 2 && unit == 'w' && d.isEmpty) return 'biweekly';
+  if (n == 1 && unit == 'm') return 'monthly';
+  if (n == 3 && unit == 'm') return 'quarterly';
+  if (n == 1 && unit == 'y') return 'yearly';
+  return 'c:$n:$unit${d.isNotEmpty ? ':${d.join(',')}' : ''}';
+}
+
+bool isTaskRepeat(String r) => kTaskRepeats.contains(r) || _custom.hasMatch(r);
+
+const _dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+/// "Daily", "Every 3 days", "Every 2 weeks on Tue, Fri"…
+String repeatLabel(String r) {
+  const presets = {
+    '': 'Never',
+    'daily': 'Daily',
+    'weekdays': 'Weekdays',
+    'weekly': 'Weekly',
+    'biweekly': 'Every 2 weeks',
+    'monthly': 'Monthly',
+    'quarterly': 'Every 3 months',
+    'yearly': 'Yearly',
+  };
+  if (presets.containsKey(r)) return presets[r]!;
+  final c = customRepeat(r);
+  if (c == null) return 'Repeats';
+  const units = {'d': ('day', 'days'), 'w': ('week', 'weeks'), 'm': ('month', 'months'), 'y': ('year', 'years')};
+  final u = units[c.unit]!;
+  final base = c.n == 1 ? 'Every ${u.$1}' : 'Every ${c.n} ${u.$2}';
+  return c.days.isEmpty ? base : '$base on ${c.days.map((d) => _dayNames[d - 1]).join(', ')}';
+}
+
+/// The whole rule in words: "Every 2 weeks on Tue, Fri · after it's done · until 31 Mar 2027".
+String repeatSentence(Task t) {
+  if (t.repeat.isEmpty) return 'Never';
+  final parts = [repeatLabel(t.repeat)];
+  if (t.repFromDone) parts.add('after it’s done');
+  if (t.repUntil.isNotEmpty) parts.add('until ${monthDay(dms(t.repUntil))}');
+  if (t.repLeft != null) parts.add(t.repLeft == 0 ? 'last one' : '${t.repLeft} more');
+  return parts.join(' · ');
+}
+
+/// "1 day before", "At due time"… for a reminder [before] minutes ahead.
+String remindLabel(int before, {required bool timed}) {
+  if (!timed) {
+    if (before == 0) return 'On the day';
+    if (before == 10080) return '1 week before';
+  }
+  if (before == 0) return 'At due time';
+  if (before % 1440 == 0) return before == 1440 ? '1 day before' : '${before ~/ 1440} days before';
+  if (before % 60 == 0) return before == 60 ? '1 hr before' : '${before ~/ 60} hr before';
+  return '$before min before';
+}
+
+/// Reminder choices offered: before a time, or (no time) days ahead at 9:00.
+const kRemindTimed = [0, 10, 30, 60, 180, 1440];
+const kRemindDay = [0, 1440, 2880, 10080];
 
 num? _n(dynamic v) => v is num ? v : (v is String ? num.tryParse(v) : null);
 final _day = RegExp(r'^\d{4}-\d{2}-\d{2}$');
@@ -120,7 +250,12 @@ Task? taskFromJson(dynamic raw, Set<String> lineIds, String fallbackCat) {
     done: raw['done'] == true,
     doneAt: _n(raw['doneAt'])?.round() ?? 0,
     created: _n(raw['created'])?.round(),
-    repeat: kTaskRepeats.contains(raw['repeat']) ? raw['repeat'] : '',
+    repeat: raw['repeat'] is String && isTaskRepeat(raw['repeat']) ? raw['repeat'] : '',
+    repFromDone: raw['repFromDone'] == true,
+    repUntil: raw['repUntil'] is String && _day.hasMatch(raw['repUntil']) ? raw['repUntil'] : '',
+    repLeft: _n(raw['repLeft'])?.round().clamp(0, 9999),
+    prio: (_n(raw['prio'])?.round() ?? 0).clamp(0, 3),
+    remind: raw['remind'] is List ? [for (final r in raw['remind']) if (r is num && r >= 0 && r <= 60 * 1440) r.round()] : null,
     amount: (_n(raw['amount'])?.round() ?? 0).clamp(0, 1 << 50),
     mcat: raw['mcat'] is String ? raw['mcat'] : '',
     acct: raw['acct'] is String ? raw['acct'] : '',
@@ -156,7 +291,29 @@ String nextDue(String from, String repeat) {
     case 'yearly':
       n = _addMonths(d, 12);
     default:
-      return from;
+      final c = customRepeat(repeat);
+      if (c == null) return from;
+      switch (c.unit) {
+        case 'd':
+          n = DateTime(d.year, d.month, d.day + c.n);
+        case 'm':
+          n = _addMonths(d, c.n);
+        case 'y':
+          n = _addMonths(d, 12 * c.n);
+        default:
+          if (c.days.isEmpty) {
+            n = DateTime(d.year, d.month, d.day + 7 * c.n);
+          } else {
+            // The next listed weekday, in every N-th week counted from this one.
+            final week0 = DateTime(d.year, d.month, d.day - (d.weekday - 1));
+            n = DateTime(d.year, d.month, d.day + 1);
+            for (var i = 0; i < 7 * c.n + 7; i++) {
+              final weeks = (DateTime.utc(n.year, n.month, n.day).difference(DateTime.utc(week0.year, week0.month, week0.day)).inDays) ~/ 7;
+              if (c.days.contains(n.weekday) && weeks % c.n == 0) break;
+              n = DateTime(n.year, n.month, n.day + 1);
+            }
+          }
+      }
   }
   return dstr(n.millisecondsSinceEpoch);
 }
@@ -167,13 +324,23 @@ DateTime _addMonths(DateTime d, int m) {
   return DateTime(d.year, d.month + m, d.day > last ? last : d.day);
 }
 
-/// Sort: dated first by due moment, then starred, then newest.
+int _prioRank(Task t) => t.prio == 0 ? 9 : t.prio;
+
+/// Sort: dated first by due moment, then priority, then starred, then newest.
 int compareTasks(Task a, Task b) {
   final da = a.dueMs, db = b.dueMs;
   if (da != null && db != null && da != db) return da.compareTo(db);
   if ((da == null) != (db == null)) return da == null ? 1 : -1;
+  final p = _prioRank(a).compareTo(_prioRank(b));
+  if (p != 0) return p;
   if (a.star != b.star) return a.star ? -1 : 1;
   return b.created.compareTo(a.created);
+}
+
+/// Priority first (P1, P2, P3, none), then as [compareTasks].
+int compareTasksByPrio(Task a, Task b) {
+  final p = _prioRank(a).compareTo(_prioRank(b));
+  return p != 0 ? p : compareTasks(a, b);
 }
 
 /// "Today", "Tomorrow", "Yesterday", "Fri", "Fri, Nov 28" or "Nov 28, 2027".

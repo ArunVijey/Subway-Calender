@@ -63,6 +63,7 @@ class _PacePainter extends CustomPainter {
   final PaceChart c;
   final Pal pal;
   final double t;
+  final Color accent = kYellow;
   _PacePainter(this.c, this.pal, this.t);
 
   @override
@@ -160,7 +161,7 @@ class _PacePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_PacePainter o) => o.t != t || o.c != c || o.pal != pal;
+  bool shouldRepaint(_PacePainter o) => o.t != t || o.c != c || o.pal != pal || o.accent != accent;
 }
 
 // ---------------------------------------------------------------------------
@@ -337,6 +338,7 @@ class _MoonPainter extends CustomPainter {
   final double f;
   final Pal pal;
   final bool future, today;
+  final Color accent = kYellow;
   _MoonPainter(this.f, this.pal, {required this.future, required this.today});
 
   @override
@@ -355,7 +357,7 @@ class _MoonPainter extends CustomPainter {
     }
     final lit = f.clamp(0.0, 1.0);
     if (lit > 0.001) {
-      final ink = pal.light ? const Color(0xFFE0A800) : kYellow;
+      final ink = pal.light ? kAccentDeep : kYellow;
       if (lit >= .999) {
         canvas.drawCircle(c, r, Paint()..color = ink);
       } else {
@@ -385,7 +387,7 @@ class _MoonPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_MoonPainter o) => o.f != f || o.pal != pal || o.future != future || o.today != today;
+  bool shouldRepaint(_MoonPainter o) => o.f != f || o.pal != pal || o.future != future || o.today != today || o.accent != accent;
 }
 
 // ---------------------------------------------------------------------------

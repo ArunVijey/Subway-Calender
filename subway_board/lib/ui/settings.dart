@@ -17,6 +17,7 @@ import 'money_pages.dart';
 import '../core/money.dart';
 import '../core/tasks.dart';
 import '../core/budget_import.dart';
+import 'accent.dart';
 import 'haptics.dart';
 import 'motion.dart';
 import 'theme.dart';
@@ -377,6 +378,26 @@ class _SettingsPageState extends State<SettingsPage> {
                         final x = await pickOption<String>(context, 'Appearance', themes, st.theme);
                         if (x != null) app.setTheme(x);
                       }),
+                    ),
+                    fr(
+                      'Accent colour',
+                      Semantics(
+                        button: true,
+                        label: 'Accent colour, ${app.accentPick == null ? 'Subway yellow' : 'custom'}. Change',
+                        excludeSemantics: true,
+                        child: Pressable(
+                          onTap: () => openAccentPicker(context),
+                          child: Container(
+                            padding: const EdgeInsets.fromLTRB(8, 6, 10, 6),
+                            decoration: BoxDecoration(color: pal.field, borderRadius: BorderRadius.circular(8)),
+                            child: Row(mainAxisSize: MainAxisSize.min, children: [
+                              Container(width: 22, height: 22, decoration: BoxDecoration(color: kYellow, shape: BoxShape.circle)),
+                              const SizedBox(width: 8),
+                              Text(app.accentPick == null ? 'Subway yellow' : 'Custom', style: inter(15, FontWeight.w500, color: pal.ink)),
+                            ]),
+                          ),
+                        ),
+                      ),
                     ),
                     fr(
                       'Vibration',

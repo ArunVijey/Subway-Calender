@@ -7,11 +7,12 @@
 import 'logic.dart';
 import 'model.dart';
 import 'money.dart';
+import 'tasks.dart';
 import 'util.dart';
 
 enum QMode { task, event, spend }
 
-enum QKind { date, time, repeat, dur, amount, line, mcat, star }
+enum QKind { date, time, repeat, dur, amount, line, mcat, star, prio }
 
 /// One thing the parser recognised; shown as a chip under the field.
 class QToken {
@@ -30,6 +31,7 @@ class Quick {
   String? line; // line id
   String? mcat; // money category id
   bool star = false;
+  int prio = 0; // 1 = highest … 3
   bool income = false;
   final tokens = <QToken>[];
   bool has(QKind k) => tokens.any((t) => t.kind == k);
@@ -83,6 +85,18 @@ Quick parseQuick(String input, QMode mode, AppData s, Money money, {Set<QKind> i
 
   // ---------- repeat ----------
   if (mode != QMode.spend) {
+    // "every 3 days", "every 2 weeks", "every other month" (tasks; the board keeps to presets)
+    if (mode == QMode.task) {
+      take(QKind.repeat, RegExp(r'\s(?:repeat\s+)?every\s+(\d{1,3}|other|second)\s*(days?|d|weeks?|w|wks?|months?|mo|mths?|years?|yrs?|y)(?=\s)', caseSensitive: false), (m) {
+        final raw = m[1]!.toLowerCase();
+        final n = raw == 'other' || raw == 'second' ? 2 : int.parse(raw);
+        if (n < 1) return false;
+        final u = m[2]!.toLowerCase();
+        final unit = u.startsWith('d') ? 'd' : (u.startsWith('w') ? 'w' : (u.startsWith('m') ? 'm' : 'y'));
+        q.repeat = makeRepeat(n, unit);
+        return true;
+      });
+    }
     take(QKind.repeat, RegExp(r'\s(every\s*day|daily|every\s*week\s*days?|weekdays|every\s*week|weekly|every\s*month|monthly|every\s*year|yearly|annually)(?=\s)', caseSensitive: false), (m) {
       final w = m[1]!.toLowerCase().replaceAll(RegExp(r'\s'), '');
       q.repeat = w.contains('weekday')
@@ -217,6 +231,14 @@ Quick parseQuick(String input, QMode mode, AppData s, Money money, {Set<QKind> i
         text = text.replaceRange(m.start, m.end, ' ');
       }
     }
+  }
+
+  // ---------- priority: !1 !2 !3 or p1 p2 p3 ----------
+  if (mode == QMode.task) {
+    take(QKind.prio, RegExp(r'\s(?:!|p)([1-3])(?=\s)', caseSensitive: false), (m) {
+      q.prio = int.parse(m[1]!);
+      return true;
+    });
   }
 
   // ---------- star ----------

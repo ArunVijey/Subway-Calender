@@ -887,3 +887,135 @@ String? matchMCat(Money m, String title, {bool income = false}) {
   }
   return best;
 }
+
+// ---------------------------------------------------------------------------
+// Learning from history: what you called a spend before tells us its category
+// and account (like Cashew's "associated titles", but read straight from the
+// entries you already have, so there's nothing extra to store).
+
+/// A title reduced to the words that matter: "Lunch @ Dosa Hut #2" → "lunch dosa hut".
+String normTitle(String s) => s
+    .toLowerCase()
+    .replaceAll(RegExp(r'[^\p{L}\p{N}\s]', unicode: true), ' ')
+    .replaceAll(RegExp(r'\b\d+\b'), ' ')
+    .replaceAll(RegExp(r'\s+'), ' ')
+    .trim();
+
+/// Where a category guess came from, for the line under the picker.
+enum CatWhy { history, keyword, fallback }
+
+class CatGuess {
+  final String cat;
+  final CatWhy why;
+
+  /// History: how many times, and the title it matched ("lunch").
+  final int times;
+  final String key;
+  const CatGuess(this.cat, this.why, {this.times = 0, this.key = ''});
+}
+
+class _Seen {
+  final cats = <String, double>{};
+  final count = <String, int>{};
+  String title = '';
+  int last = 0;
+  String acct = '';
+}
+
+/// An index of past entries, built once when a sheet opens.
+class TitleMemory {
+  final Money m;
+  final bool income;
+  final _byKey = <String, _Seen>{};
+  final _acctByCat = <String, String>{};
+  final recentCats = <String>[];
+
+  TitleMemory(this.m, {this.income = false, int? now}) {
+    final t0 = now ?? nowMs();
+    final live = {for (final c in m.cats) if (!c.archived && c.income == income) c.id};
+    final acctLive = {for (final a in m.liveAccounts) a.id};
+    final list = m.txns.where((t) => income ? t.income : t.isSpend).toList()..sort((a, b) => b.at.compareTo(a.at));
+    for (final t in list) {
+      if (!live.contains(t.cat)) continue;
+      if (recentCats.length < 12 && !recentCats.contains(t.cat)) recentCats.add(t.cat);
+      if (t.acct.isNotEmpty && acctLive.contains(t.acct)) _acctByCat.putIfAbsent(t.cat, () => t.acct);
+      final k = normTitle(t.title);
+      if (k.isEmpty) continue;
+      final e = _byKey.putIfAbsent(k, _Seen.new);
+      // Recent entries count more: weight halves every 6 months.
+      final age = ((t0 - t.at) / kDay).clamp(0, 36500);
+      final w = math.pow(.5, age / 182).toDouble();
+      e.cats[t.cat] = (e.cats[t.cat] ?? 0) + w;
+      e.count[t.cat] = (e.count[t.cat] ?? 0) + 1;
+      if (t.at > e.last) {
+        e.last = t.at;
+        e.title = t.title.trim();
+        if (t.acct.isNotEmpty && acctLive.contains(t.acct)) e.acct = t.acct;
+      }
+    }
+  }
+
+  /// Words that say nothing about what a spend was.
+  static const _filler = {'pay', 'paid', 'buy', 'bought', 'renew', 'renewal', 'get', 'got', 'the', 'a', 'an', 'for', 'to', 'at', 'in', 'on', 'of', 'with', 'and', 'from', 'my', 'new', 'bill', 'fee', 'fees', 'due'};
+
+  /// The entry for [title]: the exact words, else the longest run of its
+  /// leading words seen before ("lunch with sam" → "lunch"), else the longest
+  /// run anywhere in it ("renew mtc card" → "mtc card"), never filler alone.
+  (String, _Seen)? _find(String title) {
+    final k = normTitle(title);
+    if (k.isEmpty) return null;
+    final words = k.split(' ');
+    for (var n = words.length; n >= 1; n--) {
+      final key = words.take(n).join(' ');
+      if (key.length < 3 && n < words.length) continue;
+      if (n == 1 && words.length > 1 && _filler.contains(key)) continue;
+      final e = _byKey[key];
+      if (e != null) return (key, e);
+    }
+    for (var n = words.length - 1; n >= 1; n--) {
+      for (var i = 1; i + n <= words.length; i++) {
+        final run = words.sublist(i, i + n);
+        if (run.every(_filler.contains)) continue;
+        final key = run.join(' ');
+        if (key.length < 3) continue;
+        final e = _byKey[key];
+        if (e != null) return (key, e);
+      }
+    }
+    return null;
+  }
+
+  /// Your usual category for [title], then a keyword match, then the fallback.
+  CatGuess guess(String title) {
+    final f = _find(title);
+    if (f != null) {
+      final best = f.$2.cats.entries.reduce((a, b) => b.value > a.value ? b : a).key;
+      return CatGuess(best, CatWhy.history, times: f.$2.count[best] ?? 0, key: f.$1);
+    }
+    final kw = matchMCat(m, title, income: income);
+    if (kw != null) return CatGuess(kw, CatWhy.keyword);
+    return CatGuess(income ? m.fallbackIncome : m.fallbackCat, CatWhy.fallback);
+  }
+
+  /// The account to start on: the one last used for this title, then for
+  /// this category, then the default.
+  String acctFor(String title, String cat) {
+    final e = _find(title)?.$2;
+    if (e != null && e.acct.isNotEmpty) return e.acct;
+    return _acctByCat[cat] ?? m.newAcct;
+  }
+
+  /// Past titles that start like [prefix] (2+ letters), most recent first.
+  List<String> complete(String prefix, {int max = 3}) {
+    final p = normTitle(prefix);
+    if (p.length < 2) return const [];
+    final hits = _byKey.entries.where((e) => e.key.startsWith(p) && e.key != p).toList()..sort((a, b) => b.value.last.compareTo(a.value.last));
+    final out = <String>[];
+    for (final e in hits) {
+      if (out.any((x) => x.toLowerCase() == e.value.title.toLowerCase())) continue;
+      out.add(e.value.title);
+      if (out.length >= max) break;
+    }
+    return out;
+  }
+}

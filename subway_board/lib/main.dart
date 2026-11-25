@@ -110,7 +110,7 @@ ThemeData appTheme() => ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: kBlack,
         fontFamily: 'Inter',
-        colorScheme: const ColorScheme.dark(primary: kYellow, onPrimary: Colors.black, surface: Color(0xFF141416)),
+        colorScheme: ColorScheme.dark(primary: kYellow, onPrimary: Colors.black, surface: const Color(0xFF141416)),
         textSelectionTheme: TextSelectionThemeData(cursorColor: kYellow, selectionColor: kYellow.withValues(alpha: .35), selectionHandleColor: kYellow),
         splashFactory: NoSplash.splashFactory,
         highlightColor: Colors.white10,

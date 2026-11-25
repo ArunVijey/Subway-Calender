@@ -8,6 +8,8 @@ package com.arunvijey.subwayboard.widget
 
 import android.content.Context
 import android.content.Intent
+import android.content.res.ColorStateList
+import android.os.Build
 import android.view.View
 import android.widget.RemoteViews
 import com.arunvijey.subwayboard.R
@@ -241,6 +243,7 @@ class WidgetRows(private val c: Context, widthDp: Int) {
         rv.setInt(R.id.row_bg, "setColorFilter", rowBg)
         // The live row breathes between yellow and bright yellow, like the board.
         rv.setViewVisibility(R.id.row_glow, if (primary) View.VISIBLE else View.GONE)
+        if (primary) rv.setInt(R.id.row_glow_hi, "setColorFilter", YELLOW_HI)
         rv.setInt(R.id.row_rule, "setColorFilter", pal.rule)
 
         // Made with a task: its tick leads the row (BoardRow does the same).
@@ -287,6 +290,10 @@ class WidgetRows(private val c: Context, widthDp: Int) {
 
         val pb = if (!live) 0 else if (primary) R.id.row_pb_yellow_row else if (pal.light) R.id.row_pb_light else R.id.row_pb_dark
         for (id in listOf(R.id.row_pb_yellow_row, R.id.row_pb_dark, R.id.row_pb_light)) rv.setViewVisibility(id, if (id == pb) View.VISIBLE else View.GONE)
+        // The bar on the board fills in the accent (Android 12+ can tint it remotely).
+        if (Build.VERSION.SDK_INT >= 31 && (pb == R.id.row_pb_dark || pb == R.id.row_pb_light)) {
+            rv.setColorStateList(pb, "setProgressTintList", ColorStateList.valueOf(YELLOW))
+        }
         if (pb != 0) rv.setProgressBar(pb, 1000, progress(ev), false)
 
         rv.setOnClickFillInIntent(R.id.row_root, open("event", ev.id, it.day))
@@ -365,6 +372,7 @@ class WidgetRows(private val c: Context, widthDp: Int) {
         val textMax = widthPx - dp(14 * 2 + (if (linked) 2 + 40 else 14) + 12 + 10 + 26)
         rv.setInt(R.id.card_bg, "setColorFilter", bg)
         rv.setViewVisibility(R.id.card_glow, if (live) View.VISIBLE else View.GONE)
+        if (live) rv.setInt(R.id.card_glow_hi, "setColorFilter", YELLOW_HI)
         rv.setViewVisibility(R.id.card_live_box, if (tag != null) View.VISIBLE else View.GONE)
         if (tag != null) {
             rv.setImageViewBitmap(R.id.card_live, tag.first)

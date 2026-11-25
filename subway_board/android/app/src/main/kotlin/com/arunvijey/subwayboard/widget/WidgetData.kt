@@ -14,7 +14,9 @@ import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
 
-const val YELLOW = 0xFFF7C400.toInt()
+/** The app's accent (Subway yellow unless one is picked in Settings), and its glow. */
+var YELLOW = 0xFFF7C400.toInt()
+var YELLOW_HI = 0xFFFFDC3D.toInt()
 const val BLACK = 0xFF000000.toInt()
 const val WHITE = 0xFFFFFFFF.toInt()
 
@@ -95,6 +97,9 @@ class Snapshot(
             val ts = o.optJSONArray("tasks")
             val xs = o.optJSONArray("txns")
             val ds = o.optJSONObject("days")
+            // The accent comes with the data; older snapshots keep the yellow.
+            YELLOW = o.optString("accent").takeIf { it.length == 7 }?.let(::parseColor) ?: 0xFFF7C400.toInt()
+            YELLOW_HI = o.optString("accentHi").takeIf { it.length == 7 }?.let(::parseColor) ?: 0xFFFFDC3D.toInt()
             return Snapshot(
                 theme = o.optString("theme", "system"),
                 from = o.getLong("from"),

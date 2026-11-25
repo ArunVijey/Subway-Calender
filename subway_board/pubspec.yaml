@@ -2,7 +2,7 @@ name: subwayboard
 description: "Subway Board: calendar, tasks and money on one departure board"
 publish_to: 'none'
 
-version: 2.3.3+10
+version: 2.4.0+11
 
 environment:
   sdk: ^3.13.5

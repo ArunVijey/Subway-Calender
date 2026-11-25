@@ -1087,7 +1087,7 @@ class AgendaTask extends StatelessWidget {
                 if (sub.isNotEmpty) Text(sub, maxLines: 1, overflow: TextOverflow.ellipsis, style: inter(13, FontWeight.w600, color: overdue ? kRed : pal.sub)),
               ]),
             ),
-            if (t.star) const SvgIcon('star-on', size: 18, color: kYellow),
+            if (t.star) SvgIcon('star-on', size: 18, color: kYellow),
           ]),
         ),
       ),

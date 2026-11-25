@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui' show Color;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
@@ -24,6 +25,7 @@ import '../services/backup.dart';
 import '../services/google_auth.dart';
 import '../services/platform.dart';
 import '../services/widget_bridge.dart';
+import '../ui/theme.dart' show setAccent, accentFromHex, accentHex, rebuildAll;
 import 'demo.dart';
 
 class ToastAction {
@@ -136,6 +138,7 @@ class AppState extends ChangeNotifier {
           if (!await keep.exists()) await _file!.copy(keep.path);
         }
         s = normalize(raw);
+        setAccent(accentFromHex(s.settings.extra['accent']));
         // A preview seeded before accounts existed: refresh its demo money.
         if (kDemo && s.money.accounts.isEmpty && !s.money.txns.any((t) => t.src == kBudgetSrc)) seedDemoMoney(s);
       } else if (kDemo) {
@@ -742,6 +745,21 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// The accent picked (null = the Subway yellow), as chosen on the wheel.
+  Color? get accentPick => accentFromHex(s.settings.extra['accent']);
+
+  /// Sets the accent everywhere, the widget too. Null resets to yellow.
+  void setAccentColor(Color? c) {
+    final used = setAccent(c);
+    if (c == null) {
+      s.settings.extra.remove('accent');
+    } else {
+      s.settings.extra['accent'] = accentHex(used);
+    }
+    save();
+    notifyListeners();
+  }
+
   /// Applies the sync section. Returns the number of events that would be
   /// orphaned by leaving iCal mode (the caller asks before removing them).
   static const _sourceOf = {'ical': 'ical', 'api': 'gapi'};
@@ -1085,6 +1103,15 @@ class AppState extends ChangeNotifier {
 
   void restoreBackup(Map<String, dynamic> st) {
     s = normalize(st['lines'] is List ? st : fromV2(st));
+    // The preview build never writes the real app's backup file.
+    if (kDemo) {
+      s.settings
+        ..autoBackup = false
+        ..backupUri = ''
+        ..backupName = '';
+    }
+    setAccent(accentFromHex(s.settings.extra['accent']));
+    rebuildAll();
     _alerted.clear();
     activeCat = null;
     save();
@@ -1437,30 +1464,46 @@ class AppState extends ChangeNotifier {
         s.money.txns.add(x);
         txnId = x.id;
       }
-      if (t.repeat.isNotEmpty) {
+      // A repeat that has run its course ends here, like a one-off.
+      String? next;
+      if (t.repeat.isNotEmpty && (t.repLeft == null || t.repLeft! > 0)) {
+        next = nextDue(t.repFromDone || t.due.isEmpty ? dstr(now) : t.due, t.repeat);
+        // Long overdue: skip to the next one from today, not one still in the past.
+        while (next!.compareTo(dstr(now)) < 0) {
+          next = nextDue(next, t.repeat);
+        }
+        if (t.repUntil.isNotEmpty && next.compareTo(t.repUntil) > 0) next = null;
+      }
+      if (next != null) {
         // The done copy is the history; the task itself rolls forward.
         s.tasks.add(t.copy()
           ..id = uid()
           ..done = true
           ..doneAt = now
           ..repeat = ''
+          ..repUntil = ''
+          ..repLeft = null
+          ..repFromDone = false
           ..txn = txnId);
-        var next = nextDue(t.due.isEmpty ? dstr(now) : t.due, t.repeat);
-        // Long overdue: skip to the next one from today, not one still in the past.
-        while (next.compareTo(dstr(now)) < 0) {
-          next = nextDue(next, t.repeat);
-        }
         t.due = next;
+        if (t.repLeft != null) t.repLeft = t.repLeft! - 1;
         for (final x in t.subs) {
           x.done = false;
         }
         msg = '${t.isBill ? 'Paid' : 'Done'} · next ${dueLabel(next, now).toLowerCase()}';
       } else {
+        // A repeat that just ran out ends as a plain done task.
+        final ended = t.repeat.isNotEmpty;
         t
           ..done = true
           ..doneAt = now
-          ..txn = txnId;
+          ..txn = txnId
+          ..repeat = ''
+          ..repUntil = ''
+          ..repLeft = null
+          ..repFromDone = false;
         msg = t.isBill ? 'Paid · ${fmtMoney(t.amount, s.money.currency)} logged' : 'Done · ${clip(t.title, 28)}';
+        if (ended) msg = '$msg · that was the last one';
       }
     } else {
       if (t.txn != null) s.money.txns.removeWhere((x) => x.id == t.txn);
@@ -2018,6 +2061,16 @@ class AppState extends ChangeNotifier {
     return s.tasks.where((t) => !t.done && t.isBill && t.due.isNotEmpty && t.due.compareTo(end) <= 0).toList()..sort(compareTasks);
   }
 
+  // ---------- task list sort ----------
+
+  /// 'due' (default) or 'prio'; kept in settings.
+  String get taskSort => s.settings.extra['taskSort'] == 'prio' ? 'prio' : 'due';
+  set taskSort(String v) {
+    s.settings.extra['taskSort'] = v;
+    _scheduleWrite();
+    notifyListeners();
+  }
+
   // ---------- quick add ----------
 
   /// Which kind the + sheet opens on: follows the tab you're on.
@@ -2086,10 +2139,17 @@ class AppState extends ChangeNotifier {
         if (ev.start > now) list.add(Alert(ev.start, 'Now departing: ${ev.title}', '${lineOf(ev.cat).name} · until ${fmtT(ev.end, use24h: use24h)}', false));
       }
       for (final t in s.tasks) {
-        final at = t.time == null ? null : t.dueMs;
-        if (t.done || at == null || at <= now || at > now + 7 * kDay) continue;
+        if (t.done || t.due.isEmpty) continue;
         final bill = t.isBill ? ' · ${fmtMoney(t.amount, s.money.currency)}' : '';
-        list.add(Alert(at, 'Due now: ${t.title}', '${lineOf(t.cat).name}$bill', false));
+        for (final r in t.reminders.toSet()) {
+          final at = t.remindAt(r);
+          if (at == null || at <= now || at > now + 7 * kDay) continue;
+          final when = t.time == null
+              ? (r == 0 ? 'Due today' : (r == 1440 ? 'Due tomorrow' : 'Due ${dueLabel(t.due, at).toLowerCase()}'))
+              : (r == 0 ? 'Due now' : 'Due ${r >= 1440 ? dueLabel(t.due, at).toLowerCase() : 'in ${remindLabel(r, timed: true).replaceAll(' before', '')}'}');
+          final prio = t.prio == 1 ? '⚑ ' : '';
+          list.add(Alert(at, '$when: $prio${t.title}', '${lineOf(t.cat).name}$bill${t.time != null && r > 0 ? ' · ${minLabel(t.time!, use24h: use24h)}' : ''}', r > 0));
+        }
       }
       final st = s.settings;
       // Bills: a heads-up the morning before and the morning it's due.

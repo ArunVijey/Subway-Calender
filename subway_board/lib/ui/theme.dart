@@ -4,8 +4,81 @@
 import 'package:flutter/material.dart';
 
 const kBlack = Color(0xFF000000);
-const kYellow = Color(0xFFF7C400);
-const kYellowHi = Color(0xFFFFDC3D);
+// ---------- accent ----------
+// The Subway yellow is the default accent; Settings → Display → Accent colour
+// swaps it everywhere (and on the widget). Black text and marks sit on the
+// accent all over, so any pick is lifted until black reads well on it.
+
+const kDefaultAccent = Color(0xFFF7C400);
+
+/// The accent (named for the original yellow; it's whatever is chosen).
+Color kYellow = kDefaultAccent;
+
+/// The bright end of the live row's breathing glow.
+Color kYellowHi = const Color(0xFFFFDC3D);
+
+/// The accent as text or a thin mark on the cream (light) board.
+Color kAccentInk = const Color(0xFF8A6D00);
+
+/// A deeper accent for filled marks on the cream board.
+Color kAccentDeep = const Color(0xFFE0A800);
+
+/// Lightest black text should need on the accent (contrast about 7:1).
+const _minLum = .30;
+
+/// [c] lifted (lighter, same hue) until black text reads well on it.
+Color readableAccent(Color c) {
+  var h = HSLColor.fromColor(c.withValues(alpha: 1));
+  var out = h.toColor();
+  for (var i = 0; i < 60 && out.computeLuminance() < _minLum; i++) {
+    h = h.withLightness((h.lightness + .01).clamp(0.0, 1.0));
+    out = h.toColor();
+  }
+  return out;
+}
+
+/// Sets the accent everywhere; returns the color actually used.
+Color setAccent(Color? c) {
+  if (c == null || c.toARGB32() == kDefaultAccent.toARGB32()) {
+    kYellow = kDefaultAccent;
+    kYellowHi = const Color(0xFFFFDC3D);
+    kAccentInk = const Color(0xFF8A6D00);
+    kAccentDeep = const Color(0xFFE0A800);
+    return kYellow;
+  }
+  final base = readableAccent(c);
+  final h = HSLColor.fromColor(base);
+  kYellow = base;
+  // Same steps the yellow takes: a lighter glow, a dark ink, a deeper fill.
+  kYellowHi = h.withLightness((h.lightness + .11).clamp(0.0, .93)).withSaturation((h.saturation + .05).clamp(0.0, 1.0)).toColor();
+  // Dark enough to read on the cream board (4.5:1 or better), whatever the hue.
+  const cream = 0.8975; // luminance of #F6F3EC
+  var ink = h.withLightness(.30);
+  while ((cream + .05) / (ink.toColor().computeLuminance() + .05) < 4.6 && ink.lightness > .05) {
+    ink = ink.withLightness(ink.lightness - .01);
+  }
+  kAccentInk = ink.toColor();
+  kAccentDeep = h.withLightness((h.lightness - .07).clamp(.25, 1.0)).toColor();
+  return base;
+}
+
+/// The accent saved in settings ('#rrggbb'), or null for the Subway yellow.
+Color? accentFromHex(Object? v) {
+  if (v is! String || !RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(v)) return null;
+  return Color(int.parse(v.substring(1), radix: 16) | 0xFF000000);
+}
+
+/// Rebuilds every widget so the new accent shows at once (sheets stay open).
+void rebuildAll() {
+  void mark(Element e) {
+    e.markNeedsBuild();
+    e.visitChildren(mark);
+  }
+
+  WidgetsBinding.instance.rootElement?.visitChildren(mark);
+}
+
+String accentHex(Color c) => '#${(c.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}';
 const kDim = Color(0xFFA1A1AA);
 const kTabIdle = Color(0xFF71717A);
 const kRed = Color(0xFFF87171);
@@ -14,7 +87,11 @@ const kGreen = Color(0xFF16A34A);
 class Pal {
   final bool light;
   // board
-  final Color board, row, rowNext, rule, text, sub, nextNum, progTrack;
+  final Color board, row, rowNext, rule, text, sub, progTrack;
+  final Color? _nextNum;
+
+  /// The next departure's countdown: the accent on the dark board.
+  Color get nextNum => _nextNum ?? kYellow;
   // form / settings / sheets
   final Color panel, ink, panelRule, field, label, rowLabel, placeholder, btn;
 
@@ -26,7 +103,7 @@ class Pal {
     required this.rule,
     required this.text,
     required this.sub,
-    required this.nextNum,
+    Color? nextNum,
     required this.progTrack,
     required this.panel,
     required this.ink,
@@ -36,7 +113,8 @@ class Pal {
     required this.rowLabel,
     required this.placeholder,
     required this.btn,
-  });
+    // ignore: prefer_initializing_formals
+  }) : _nextNum = nextNum;
 
   static const dark = Pal._(
     light: false,
@@ -46,7 +124,7 @@ class Pal {
     rule: Color(0xFF232328),
     text: Colors.white,
     sub: kDim,
-    nextNum: kYellow,
+    nextNum: null,
     progTrack: Color(0x1FFFFFFF),
     panel: Color(0xFF141416),
     ink: Colors.white,

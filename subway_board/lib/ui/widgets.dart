@@ -236,7 +236,7 @@ Future<T?> pickOption<T>(BuildContext context, String title, List<(T, String)> o
             decoration: BoxDecoration(border: Border(bottom: BorderSide(color: pal.panelRule))),
             child: Row(children: [
               Expanded(child: Text(label, style: inter(16, FontWeight.w500, color: pal.ink))),
-              if (v == current) const Icon(Icons.check, color: kYellow, size: 20),
+              if (v == current) Icon(Icons.check, color: kYellow, size: 20),
             ]),
           ),
         ),
@@ -267,7 +267,7 @@ Future<TimeOfDay?> pickTime(BuildContext context, TimeOfDay initial) {
 
 ThemeData pickerTheme(Pal pal) {
   final scheme = pal.light
-      ? const ColorScheme.light(primary: Color(0xFF111111), onPrimary: kYellow, surface: Color(0xFFF6F3EC), onSurface: Color(0xFF111111))
-      : const ColorScheme.dark(primary: kYellow, onPrimary: Colors.black, surface: Color(0xFF141416), onSurface: Colors.white);
+      ? ColorScheme.light(primary: const Color(0xFF111111), onPrimary: kYellow, surface: const Color(0xFFF6F3EC), onSurface: const Color(0xFF111111))
+      : ColorScheme.dark(primary: kYellow, onPrimary: Colors.black, surface: const Color(0xFF141416), onSurface: Colors.white);
   return ThemeData(colorScheme: scheme, useMaterial3: true, fontFamily: 'Inter');
 }

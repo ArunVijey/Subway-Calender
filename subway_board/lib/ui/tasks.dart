@@ -11,19 +11,10 @@ import 'board.dart';
 import 'haptics.dart';
 import 'lines.dart';
 import 'motion.dart';
+import 'pickers.dart';
 import 'theme.dart';
 import 'widgets.dart';
 
-const kTaskRepeatLabels = {
-  '': 'Never',
-  'daily': 'Every day',
-  'weekdays': 'Every weekday',
-  'weekly': 'Every week',
-  'biweekly': 'Every 2 weeks',
-  'monthly': 'Every month',
-  'quarterly': 'Every 3 months',
-  'yearly': 'Every year',
-};
 
 class TasksView extends StatefulWidget {
   const TasksView({super.key});
@@ -54,7 +45,8 @@ class _TasksViewState extends State<TasksView> with SingleTickerProviderStateMix
     }
     final now = nowMs(), today = dstr(now), tomorrow = dstr(addDays(sod(now), 1));
     bool keep(Task t) => (app.activeCat == null || t.cat == app.activeCat) && (!app.starOnly || t.star);
-    final open = app.s.tasks.where((t) => !t.done && keep(t)).toList()..sort(compareTasks);
+    final byPrio = app.taskSort == 'prio';
+    final open = app.s.tasks.where((t) => !t.done && keep(t)).toList()..sort(byPrio ? compareTasksByPrio : compareTasks);
     final done = app.s.tasks.where((t) => t.done && keep(t)).toList()..sort((a, b) => b.doneAt.compareTo(a.doneAt));
 
     final groups = <(String, List<Task>, bool)>[
@@ -99,6 +91,29 @@ class _TasksViewState extends State<TasksView> with SingleTickerProviderStateMix
             label: '★ STARRED',
             on: app.starOnly,
             onTap: app.toggleStarOnly,
+          ),
+          const SizedBox(width: 8),
+          // Sort: by due day (off) or priority first (on).
+          Semantics(
+            button: true,
+            toggled: byPrio,
+            label: byPrio ? 'Sorted by priority. Tap to sort by due day' : 'Sort by priority',
+            excludeSemantics: true,
+            child: Pressable(
+              scale: .88,
+              onTap: () {
+                tick();
+                app.taskSort = byPrio ? 'due' : 'prio';
+                app.showToast(byPrio ? 'Sorted by due day' : 'Priority first');
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 260),
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(color: byPrio ? Colors.white : const Color(0xFF1C1C20), shape: BoxShape.circle),
+                child: Icon(byPrio ? Icons.flag_rounded : Icons.outlined_flag_rounded, size: 20, color: byPrio ? const Color(0xFFF87171) : const Color(0xFFE4E4E7)),
+              ),
+            ),
           ),
         ]),
       ),
@@ -432,7 +447,8 @@ class _TaskRowState extends State<TaskRow> {
     }
     add(line.name);
     if (!t.done && app.s.events.any((e) => e.task == t.id)) add('On board');
-    if (t.repeat.isNotEmpty) add('↻ ${t.repeat}');
+    if (t.repeat.isNotEmpty) add('↻ ${repeatLabel(t.repeat).toLowerCase()}');
+    if (!t.done && t.due.isNotEmpty && t.remind != null && t.remind!.isNotEmpty) add('🔔');
     if (t.subs.isNotEmpty) add('${t.subs.where((x) => x.done).length}/${t.subs.length} steps');
     if (t.notes.isNotEmpty && t.subs.isEmpty) add('Note');
 
@@ -452,6 +468,7 @@ class _TaskRowState extends State<TaskRow> {
       child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
         TaskCheck(done: done, color: color, onTap: _toggle, label: done ? 'Mark ${t.title} not done' : 'Complete ${t.title}'),
         const SizedBox(width: 4),
+        if (t.prio > 0 && !t.done) Padding(padding: const EdgeInsets.only(right: 4), child: PrioFlag(t.prio, size: 17)),
         Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -547,17 +564,18 @@ class _SwipeBg extends StatelessWidget {
 // ---------------------------------------------------------------------------
 // Task editor.
 
-void openTaskSheet(BuildContext context, Task? task, {String? due}) {
+/// Opens the task editor: [task] to edit, or a new one ([draft] fills it in,
+/// e.g. from quick add's "More"; [onBoard] starts its board switch on).
+void openTaskSheet(BuildContext context, Task? task, {String? due, Task? draft, bool onBoard = false}) {
   final app = context.read<AppState>();
-  final t = task?.copy() ??
-      Task(id: uid(), title: '', cat: app.activeCat ?? app.s.lines.first.id, due: due ?? '');
-  showSheet<void>(context, (_) => ChangeNotifierProvider.value(value: app, child: _TaskSheet(t, isNew: task == null)));
+  final t = task?.copy() ?? draft ?? Task(id: uid(), title: '', cat: app.activeCat ?? app.s.lines.first.id, due: due ?? '');
+  showSheet<void>(context, (_) => ChangeNotifierProvider.value(value: app, child: _TaskSheet(t, isNew: task == null, startOnBoard: onBoard)));
 }
 
 class _TaskSheet extends StatefulWidget {
   final Task t;
-  final bool isNew;
-  const _TaskSheet(this.t, {required this.isNew});
+  final bool isNew, startOnBoard;
+  const _TaskSheet(this.t, {required this.isNew, this.startOnBoard = false});
   @override
   State<_TaskSheet> createState() => _TaskSheetState();
 }
@@ -571,10 +589,11 @@ class _TaskSheetState extends State<_TaskSheet> {
   final _subCtl = <String, TextEditingController>{};
   final _newSub = TextEditingController();
   final _newSubFocus = FocusNode();
+  late final TitleMemory _mem = TitleMemory(app.s.money);
 
   /// Has a linked event on the board (quick add's "Also: calendar").
   late final bool _wasOnBoard = app.s.events.any((e) => e.task == t.id);
-  late bool _onBoard = _wasOnBoard;
+  late bool _onBoard = _wasOnBoard || widget.startOnBoard;
 
   static String _plain(int minor) => minor % 100 == 0 ? '${minor ~/ 100}' : (minor / 100).toStringAsFixed(2);
 
@@ -603,6 +622,15 @@ class _TaskSheetState extends State<_TaskSheet> {
     _newSubFocus.requestFocus();
   }
 
+  /// The category a bill is logged under: the one set, else your usual one for this name.
+  String _billCat() {
+    final m = app.s.money;
+    if (t.mcat.isNotEmpty && m.cats.any((c) => c.id == t.mcat && !c.income)) return t.mcat;
+    final g = _mem.guess(_title.text);
+    if (g.why == CatWhy.fallback && m.cats.any((c) => c.id == 'bills' && !c.archived)) return 'bills';
+    return g.cat;
+  }
+
   Task _read() {
     final out = t.copy()
       ..title = _title.text.trim()
@@ -613,7 +641,18 @@ class _TaskSheetState extends State<_TaskSheet> {
         if ((_subCtl[s.id]?.text ?? s.title).trim().isNotEmpty) SubTask(id: s.id, title: (_subCtl[s.id]?.text ?? s.title).trim(), done: s.done),
     ];
     if (_newSub.text.trim().isNotEmpty) out.subs.add(SubTask(id: uid(), title: _newSub.text.trim()));
-    if (out.due.isEmpty) out.time = null;
+    if (out.due.isEmpty) {
+      out
+        ..time = null
+        ..remind = null;
+    }
+    // A bill is logged under a set category, so what you see is what you get.
+    if (out.amount > 0 && out.mcat.isEmpty) out.mcat = _billCat();
+    if (out.amount == 0) {
+      out
+        ..mcat = ''
+        ..acct = '';
+    }
     return out;
   }
 
@@ -642,29 +681,44 @@ class _TaskSheetState extends State<_TaskSheet> {
     app.deleteTask(t.id, withEvent: withEvent);
   }
 
+  Future<void> _pickDue() async {
+    final now = nowMs();
+    final d = await pickDate(context, t.due.isEmpty ? DateTime.fromMillisecondsSinceEpoch(sod(now)) : DateTime.fromMillisecondsSinceEpoch(dms(t.due)));
+    if (d != null) setState(() => t.due = dstr(d.millisecondsSinceEpoch));
+  }
+
   @override
   Widget build(BuildContext context) {
     final pal = Pal.of(context);
+    final m = app.s.money;
     final line = app.lineOf(t.cat);
     final now = nowMs();
     final amount = parseAmount(_amount.text) ?? 0;
     final rowLabel = inter(16, FontWeight.w500, color: pal.rowLabel);
+    final timed = t.time != null;
 
     Widget fr(String label, Widget control) => Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 11),
           decoration: BoxDecoration(border: Border(bottom: BorderSide(color: pal.panelRule))),
-          child: Row(children: [Expanded(child: Text(label, style: rowLabel)), control]),
+          child: Row(children: [Expanded(child: Text(label, style: rowLabel)), const SizedBox(width: 10), Flexible(flex: 3, child: Align(alignment: Alignment.centerRight, child: control))]),
         );
-    Widget chip(String text, VoidCallback onTap, {VoidCallback? onClear, Widget? lead}) => Row(mainAxisSize: MainAxisSize.min, children: [
-          Pressable(
-            onTap: onTap,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
-              decoration: BoxDecoration(color: pal.field, borderRadius: BorderRadius.circular(8)),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                if (lead != null) ...[lead, const SizedBox(width: 7)],
-                Text(text, style: inter(15, FontWeight.w500, color: pal.ink)),
-              ]),
+    Widget chip(String text, VoidCallback onTap, {VoidCallback? onClear, Widget? lead, Color? fill}) => Row(mainAxisSize: MainAxisSize.min, children: [
+          Flexible(
+            child: Pressable(
+              onTap: onTap,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                decoration: BoxDecoration(color: fill ?? pal.field, borderRadius: BorderRadius.circular(8)),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  if (lead != null) ...[lead, const SizedBox(width: 7)],
+                  Flexible(
+                    child: Text(text,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: inter(15, FontWeight.w500, color: fill == null ? pal.ink : (fill.computeLuminance() > .4 ? Colors.black : Colors.white))),
+                  ),
+                ]),
+              ),
             ),
           ),
           if (onClear != null)
@@ -674,17 +728,23 @@ class _TaskSheetState extends State<_TaskSheet> {
               child: Padding(padding: const EdgeInsets.fromLTRB(8, 8, 0, 8), child: Icon(Icons.close, size: 18, color: pal.label)),
             ),
         ]);
+    Widget head(String text) => Padding(
+          padding: const EdgeInsets.only(top: 20, bottom: 2),
+          child: Text(text, style: inter(11, FontWeight.w800, ls: .1, color: pal.label)),
+        );
 
-    final mcat = t.mcat.isNotEmpty ? app.s.money.catOf(t.mcat) : null;
+    final billCat = amount > 0 ? m.catOf(_billCat()) : null;
+    final reminders = t.reminders;
 
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       SheetHead(widget.isNew ? 'New task' : (t.done ? 'Done' : 'Task')),
       TextField(
         controller: _title,
-        autofocus: widget.isNew,
+        autofocus: widget.isNew && t.title.isEmpty,
         textCapitalization: TextCapitalization.sentences,
         textInputAction: TextInputAction.done,
         onSubmitted: (_) => _save(),
+        onChanged: (_) => setState(() {}),
         maxLines: null,
         style: inter(22, FontWeight.w700, color: pal.ink),
         cursorColor: kYellow,
@@ -697,17 +757,24 @@ class _TaskSheetState extends State<_TaskSheet> {
         ),
       ),
       SheetField(controller: _notes, hint: 'Add details', maxLines: 4),
-      const SizedBox(height: 6),
+
+      // ---------- when ----------
+      head('WHEN'),
+      Padding(
+        padding: const EdgeInsets.only(top: 8, bottom: 4),
+        child: DatePresets(
+          value: t.due.isEmpty ? null : t.due,
+          onPick: (d) => setState(() => t.due = d),
+          onMore: _pickDue,
+        ),
+      ),
       fr(
         'Due',
         chip(
           t.due.isEmpty ? 'No date' : dueLong(t.due, now),
-          () async {
-            final d = await pickDate(context, t.due.isEmpty ? DateTime.fromMillisecondsSinceEpoch(sod(now)) : DateTime.fromMillisecondsSinceEpoch(dms(t.due)));
-            if (d != null) setState(() => t.due = dstr(d.millisecondsSinceEpoch));
-          },
+          _pickDue,
           lead: SvgIcon('cal', size: 16, color: pal.label),
-          onClear: t.due.isEmpty ? null : () => setState(() => t..due = ''..time = null..repeat = ''),
+          onClear: t.due.isEmpty ? null : () => setState(() => t..due = ''..time = null..repeat = ''..remind = null),
         ),
       ),
       if (t.due.isNotEmpty) ...[
@@ -725,16 +792,67 @@ class _TaskSheetState extends State<_TaskSheet> {
         ),
         fr(
           'Repeat',
-          chip(kTaskRepeatLabels[t.repeat]!, () async {
-            final x = await pickOption<String>(context, 'Repeat', kTaskRepeatLabels.entries.map((e) => (e.key, e.value)).toList(), t.repeat);
-            if (x != null) setState(() => t.repeat = x);
+          chip(t.repeat.isEmpty ? 'Never' : repeatSentence(t), () async {
+            final x = await pickRepeat(context, repeat: t.repeat, fromDone: t.repFromDone, until: t.repUntil, left: t.repLeft, due: t.due);
+            if (x == null) return;
+            setState(() => t
+              ..repeat = x.repeat
+              ..repFromDone = x.fromDone
+              ..repUntil = x.until
+              ..repLeft = x.left);
           }, lead: SvgIcon('repeat', size: 16, color: pal.label)),
         ),
         fr(
           t.time == null && _onBoard ? 'On the board · all day' : 'On the board',
           PillSwitch(value: _onBoard, onChanged: (x) => setState(() => _onBoard = x)),
         ),
+
+        // ---------- reminders ----------
+        head('REMIND ME'),
+        Padding(
+          padding: const EdgeInsets.only(top: 8, bottom: 10),
+          child: Wrap(spacing: 8, runSpacing: 8, children: [
+            for (final r in reminders)
+              Container(
+                padding: const EdgeInsets.fromLTRB(10, 6, 4, 6),
+                decoration: BoxDecoration(color: pal.field, borderRadius: BorderRadius.circular(10)),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.notifications_active_rounded, size: 15, color: kYellow),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${remindLabel(r, timed: timed)}${!timed ? ', ${minLabel(kTaskDayBase, use24h: app.use24h)}' : ''}',
+                    style: inter(13.5, FontWeight.w600, color: pal.ink),
+                  ),
+                  Pressable(
+                    scale: .8,
+                    onTap: () => setState(() => t.remind = [...reminders]..remove(r)),
+                    child: Padding(padding: const EdgeInsets.all(4), child: Icon(Icons.close, size: 15, color: pal.label)),
+                  ),
+                ]),
+              ),
+            Pressable(
+              scale: .92,
+              onTap: () async {
+                final x = await pickReminders(context, reminders, timed: timed);
+                if (x != null) setState(() => t.remind = x);
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), border: Border.all(color: pal.label.withValues(alpha: .6), width: 1.2)),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.add, size: 16, color: pal.ink),
+                  const SizedBox(width: 4),
+                  Text(reminders.isEmpty ? 'Add a reminder' : 'Add', style: inter(13.5, FontWeight.w600, color: pal.ink)),
+                ]),
+              ),
+            ),
+          ]),
+        ),
+        Container(height: 1, color: pal.panelRule),
       ],
+
+      // ---------- organise ----------
+      head('ORGANISE'),
       fr(
         'Line',
         Pressable(
@@ -742,7 +860,7 @@ class _TaskSheetState extends State<_TaskSheet> {
             final x = await pickOption<String>(context, 'Line', [for (final l in app.s.lines) (l.id, '${l.label} · ${l.name}')], t.cat);
             if (x != null) setState(() => t.cat = x);
           },
-          child: Row(children: [
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
             LineBadge(line, size: 26, fontSize: 12),
             const SizedBox(width: 8),
             Text(line.name, style: inter(16, FontWeight.w600, color: pal.ink)),
@@ -751,8 +869,13 @@ class _TaskSheetState extends State<_TaskSheet> {
           ]),
         ),
       ),
+      fr('Priority', PrioPicker(value: t.prio, onChanged: (v) => setState(() => t.prio = v))),
+      fr('Starred', PillSwitch(value: t.star, onChanged: (v) => setState(() => t.star = v))),
+
+      // ---------- bill ----------
+      head('BILL'),
       fr(
-        'Bill amount',
+        'Amount',
         SizedBox(
           width: 150,
           child: TextField(
@@ -763,7 +886,7 @@ class _TaskSheetState extends State<_TaskSheet> {
             style: inter(16, FontWeight.w600, color: pal.ink),
             cursorColor: kYellow,
             decoration: InputDecoration(
-              prefixText: app.s.money.currency,
+              prefixText: m.currency,
               prefixStyle: inter(16, FontWeight.w600, color: pal.label),
               hintText: 'None',
               hintStyle: inter(16, FontWeight.w500, color: pal.placeholder),
@@ -776,20 +899,27 @@ class _TaskSheetState extends State<_TaskSheet> {
           ),
         ),
       ),
-      if (amount > 0)
+      if (billCat != null) ...[
         fr(
-          'Pay from',
-          chip(mcat == null ? 'Auto (${app.s.money.catOf(matchMCat(app.s.money, _title.text) ?? 'bills').name})' : '${mcat.emoji}  ${mcat.name}', () async {
-            final x = await pickOption<String>(
-                context, 'Category', [('', 'Auto (from the name)'), for (final c in app.s.money.cats) (c.id, '${c.emoji}  ${c.name}')], t.mcat);
+          'Category',
+          chip('${billCat.emoji}  ${billCat.name}', () async {
+            final x = await pickMoneyCat(context, income: false, current: billCat.id, recent: _mem.recentCats);
             if (x != null) setState(() => t.mcat = x);
-          }),
+          }, fill: hexColor(billCat.color)),
         ),
-      fr('Starred', PillSwitch(value: t.star, onChanged: (v) => setState(() => t.star = v))),
-      Padding(
-        padding: const EdgeInsets.only(top: 18, bottom: 4),
-        child: Text('SUBTASKS', style: inter(11, FontWeight.w800, ls: .1, color: pal.label)),
-      ),
+        if (m.accounts.isNotEmpty)
+          fr(
+            'Pay from',
+            chip(t.acct.isEmpty ? 'Default · ${acctText(m, m.newAcct, none: 'none')}' : acctText(m, t.acct), () async {
+              final x = await pickAccount(context, m, t.acct, title: 'Pay from', noneLabel: 'The default account');
+              if (x != null) setState(() => t.acct = x);
+            }),
+          ),
+      ],
+
+      // ---------- steps ----------
+      head('STEPS'),
+      const SizedBox(height: 4),
       for (final s in t.subs)
         Row(children: [
           TaskCheck(done: s.done, color: inkFor(hexColor(line.color), pal), size: 20, onTap: () => setState(() => s.done = !s.done), label: s.title),
@@ -819,7 +949,7 @@ class _TaskSheetState extends State<_TaskSheet> {
             style: inter(15, FontWeight.w500, color: pal.ink),
             cursorColor: kYellow,
             decoration: InputDecoration(
-              hintText: 'Add a subtask',
+              hintText: 'Add a step',
               hintStyle: inter(15, FontWeight.w500, color: pal.placeholder),
               border: InputBorder.none,
               isDense: true,
@@ -828,7 +958,7 @@ class _TaskSheetState extends State<_TaskSheet> {
         ),
       ]),
       const SizedBox(height: 8),
-      SheetBtn(widget.isNew ? 'Add task' : 'Save', kind: BtnKind.yellow, onTap: _save),
+      SheetBtn(widget.isNew ? (amount > 0 ? 'Add bill · ${app.cash(amount)}' : 'Add task') : 'Save', kind: BtnKind.yellow, onTap: _save),
       if (!widget.isNew)
         SheetBtn(t.done ? 'Mark not done' : (t.isBill ? 'Mark paid' : 'Mark done'), onTap: () {
           Navigator.pop(context);

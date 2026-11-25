@@ -18,6 +18,7 @@ import 'money_charts.dart';
 import 'money_pages.dart';
 import 'money_sections.dart';
 import 'motion.dart';
+import 'pickers.dart';
 import 'tasks.dart';
 import 'theme.dart';
 import 'widgets.dart';
@@ -578,7 +579,7 @@ class TxnRow extends StatelessWidget {
                             width: 8,
                             height: 8,
                             margin: const EdgeInsets.only(right: 7),
-                            decoration: BoxDecoration(color: pal.light ? const Color(0xFFD97706) : kYellow, shape: BoxShape.circle),
+                            decoration: BoxDecoration(color: pal.light ? kAccentDeep : kYellow, shape: BoxShape.circle),
                           ),
                         Flexible(
                           child: Text(
@@ -632,6 +633,7 @@ void openTxnSheet(
   String? type,
   String? acct,
   String? plan,
+  String note = '',
 }) {
   final app = context.read<AppState>();
   final m = app.s.money;
@@ -647,6 +649,7 @@ void openTxnSheet(
         type: ty,
         acct: acct ?? m.newAcct,
         plan: plan ?? '',
+        note: note,
       );
   showSheet<void>(
     context,
@@ -675,7 +678,13 @@ class _TxnSheetState extends State<_TxnSheet> {
   late final _tags = TextEditingController(text: t.tags.join(', '));
   late bool _neg = t.type == 'adjust' && t.amount < 0;
   bool _catTouched = false;
+  bool _acctTouched = false;
   int _added = 0;
+
+  // Your history, for the category (and account) a title usually gets.
+  late final TitleMemory _memSpend = TitleMemory(app.s.money);
+  late final TitleMemory _memIncome = TitleMemory(app.s.money, income: true);
+  TitleMemory get _mem => t.income ? _memIncome : _memSpend;
 
   static const _main = {'spend', 'refund', 'income', 'transfer'};
 
@@ -683,10 +692,18 @@ class _TxnSheetState extends State<_TxnSheet> {
   void initState() {
     super.initState();
     _catTouched = !isNew;
+    _acctTouched = !isNew || widget.t.acct != app.s.money.newAcct;
     _title.addListener(() {
-      if (_catTouched || !(t.isSpend || t.income)) return;
-      final c = matchMCat(app.s.money, _title.text, income: t.income);
-      if (c != null && c != t.cat) setState(() => t.cat = c);
+      if (!(t.isSpend || t.income)) return;
+      final g = _mem.guess(_title.text);
+      final c = _catTouched || g.why == CatWhy.fallback ? null : g.cat;
+      final a = _acctTouched || _title.text.trim().isEmpty ? null : _mem.acctFor(_title.text, c ?? t.cat);
+      if ((c != null && c != t.cat) || (a != null && a != t.acct)) {
+        setState(() {
+          if (c != null) t.cat = c;
+          if (a != null && t.type != 'transfer') t.acct = a;
+        });
+      }
     });
   }
 
@@ -769,6 +786,7 @@ class _TxnSheetState extends State<_TxnSheet> {
       );
       isNew = true;
       _catTouched = false;
+      _acctTouched = true; // keep the account the last one used
       _amount.clear();
       _title.clear();
       _note.clear();
@@ -785,6 +803,7 @@ class _TxnSheetState extends State<_TxnSheet> {
     ];
     final x = await pickOption<String>(context, dest ? 'To' : (t.type == 'transfer' ? 'From' : 'Account'), opts, cur);
     if (x == null) return;
+    if (!dest) _acctTouched = true;
     setState(() => dest ? t.to = x : t.acct = x);
   }
 
@@ -854,7 +873,6 @@ class _TxnSheetState extends State<_TxnSheet> {
       'refund' => isNew ? 'Log refund' : 'Refund',
       _ => isNew ? 'Log spend' : 'Spend',
     };
-    final cats = t.income ? m.cats.where((c) => c.income && (!c.archived || c.id == t.cat)) : m.cats.where((c) => !c.income && (!c.archived || c.id == t.cat));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -937,36 +955,25 @@ class _TxnSheetState extends State<_TxnSheet> {
             padding: const EdgeInsets.only(top: 16, bottom: 8),
             child: Text('CATEGORY', style: inter(11, FontWeight.w800, ls: .1, color: pal.label)),
           ),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final c in cats)
-                Semantics(
-                  button: true,
-                  selected: c.id == t.cat,
-                  label: c.name,
-                  excludeSemantics: true,
-                  child: Pressable(
-                    onTap: () {
-                      tick();
-                      setState(() {
-                        t.cat = c.id;
-                        _catTouched = true;
-                      });
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                      decoration: BoxDecoration(color: c.id == t.cat ? hexColor(c.color) : pal.field, borderRadius: BorderRadius.circular(20)),
-                      child: Text(
-                        '${c.emoji}  ${c.name}',
-                        style: inter(14, FontWeight.w700, color: c.id == t.cat ? (darkTextOn(c.color) ? Colors.black : Colors.white) : pal.ink),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
+          CatStrip(
+            cats: stripOrder(m, income: t.income, selected: t.cat, recent: _mem.recentCats),
+            selected: t.cat,
+            onPick: (id) {
+              tick();
+              setState(() {
+                t.cat = id;
+                _catTouched = true;
+              });
+            },
+            onAll: () async {
+              final x = await pickMoneyCat(context, income: t.income, current: t.cat, recent: _mem.recentCats);
+              if (x != null && mounted) {
+                setState(() {
+                  t.cat = x;
+                  _catTouched = true;
+                });
+              }
+            },
           ),
         ],
         const SizedBox(height: 8),
@@ -1197,13 +1204,14 @@ class _CatList extends StatelessWidget {
   }
 }
 
-void openCatSheet(BuildContext context, MCat? cat, {bool income = false}) {
+/// Edits (or adds) a category; resolves to its id once saved.
+Future<String?> openCatSheet(BuildContext context, MCat? cat, {bool income = false, String name = ''}) {
   final app = context.read<AppState>();
-  showSheet<void>(
+  return showSheet<String>(
     context,
     (_) => ChangeNotifierProvider.value(
       value: app,
-      child: _CatSheet(cat, income: income),
+      child: _CatSheet(cat, income: income, name: name),
     ),
   );
 }
@@ -1211,7 +1219,8 @@ void openCatSheet(BuildContext context, MCat? cat, {bool income = false}) {
 class _CatSheet extends StatefulWidget {
   final MCat? cat;
   final bool income;
-  const _CatSheet(this.cat, {this.income = false});
+  final String name;
+  const _CatSheet(this.cat, {this.income = false, this.name = ''});
   @override
   State<_CatSheet> createState() => _CatSheetState();
 }
@@ -1222,7 +1231,7 @@ class _CatSheetState extends State<_CatSheet> {
       widget.cat?.copy() ??
       MCat(
         id: 'c${uid()}',
-        name: '',
+        name: widget.name,
         emoji: '✨',
         income: widget.income,
         color: kPaletteMoney.firstWhere((x) => !app.s.money.cats.any((c) => c.color == x), orElse: () => kPaletteMoney.first),
@@ -1363,7 +1372,7 @@ class _CatSheetState extends State<_CatSheet> {
               app.showToast('Give it a name');
               return;
             }
-            Navigator.pop(context);
+            Navigator.pop(context, c.id);
             app.saveMCat(
               c
                 ..name = name

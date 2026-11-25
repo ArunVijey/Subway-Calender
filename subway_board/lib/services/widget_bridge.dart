@@ -18,6 +18,7 @@ import '../core/model.dart';
 import '../core/money.dart';
 import '../core/tasks.dart';
 import '../core/util.dart';
+import '../ui/theme.dart' show kYellow, kYellowHi, accentHex;
 
 /// A tap on the widget: type is 'event' (with id), 'day', 'add', 'task' or 'money'; day is YYYY-MM-DD.
 typedef WidgetLaunch = Map<String, String?>;
@@ -183,6 +184,8 @@ abstract final class WidgetBridge {
     return jsonEncode({
       'v': 2,
       'theme': s.settings.theme,
+      'accent': accentHex(kYellow),
+      'accentHi': accentHex(kYellowHi),
       'from': from,
       'to': to,
       'lines': [
@@ -207,7 +210,7 @@ abstract final class WidgetBridge {
           if ((!t.done && t.due.isNotEmpty && t.due.compareTo(toDay) < 0) || (t.done && t.doneAt >= from && dstr(t.doneAt).compareTo(fromDay) >= 0))
             {
               'id': t.id,
-              'title': t.title,
+              'title': t.prio == 1 && !t.done ? '⚑ ${t.title}' : t.title,
               'cat': t.cat,
               'due': t.due,
               'time': ?t.time,

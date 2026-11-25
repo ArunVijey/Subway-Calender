@@ -194,7 +194,7 @@ List<Widget> _review(BuildContext context, MoneyCtx c, bool first) {
   final q = reviewQueue(c.m);
   if (q.isEmpty) return const [];
   return [
-    GroupHead('TO REVIEW', count: q.length, first: first, color: Pal.of(context).light ? const Color(0xFFB45309) : kYellow, trailing: HeadAction('ALL GOOD', c.app.markAllReviewed)),
+    GroupHead('TO REVIEW', count: q.length, first: first, color: Pal.of(context).light ? kAccentInk : kYellow, trailing: HeadAction('ALL GOOD', c.app.markAllReviewed)),
     for (final t in q.take(4)) TxnRow(key: ValueKey('rv-${t.id}'), txn: t, showDate: true),
     if (q.length > 4) _SeeAll('SEE ALL ${q.length}', () => openTxnList(context, review: true)),
   ];

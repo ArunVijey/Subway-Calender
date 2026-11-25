@@ -30,6 +30,7 @@
         <ImageView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:id="@+id/row_glow_hi"
             android:scaleType="fitXY"
             android:src="@drawable/w_rect_yellow_hi" />
     </ViewFlipper>
